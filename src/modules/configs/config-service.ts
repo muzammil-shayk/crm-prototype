@@ -1,0 +1,71 @@
+import type { SearchConfig as SearchConfigRow } from "@prisma/client";
+import { NotFoundError } from "@/lib/errors";
+import { parseJsonOrUndefined } from "@/lib/json";
+import {
+  parseSearchConfigInput,
+  searchConfigInputSchema,
+  type SearchConfigInput,
+} from "@/modules/search-types/registry";
+import { configRepository } from "./config-repository";
+
+export type SearchConfig = SearchConfigInput & { id: string; createdAt: Date; updatedAt: Date };
+
+const MAX_NAME_LENGTH = 120;
+const COPY_SUFFIX = " (copy)";
+
+function readStoredConfig(row: SearchConfigRow): SearchConfig | null {
+  const parsed = searchConfigInputSchema.safeParse({
+    type: row.type,
+    name: row.name,
+    description: row.description,
+    criteria: parseJsonOrUndefined(row.criteria),
+  });
+  return parsed.success
+    ? { ...parsed.data, id: row.id, createdAt: row.createdAt, updatedAt: row.updatedAt }
+    : null;
+}
+
+const unreadable = (id: string) => `Stored search config ${id} no longer matches its search type.`;
+
+function toSearchConfig(row: SearchConfigRow): SearchConfig {
+  const config = readStoredConfig(row);
+  if (!config) throw new Error(unreadable(row.id));
+  return config;
+}
+
+function found(row: SearchConfigRow | null, id: string): SearchConfigRow {
+  if (!row) throw new NotFoundError("Search config", id);
+  return row;
+}
+
+export async function createConfig(input: unknown): Promise<SearchConfig> {
+  return toSearchConfig(await configRepository.insert(parseSearchConfigInput(input)));
+}
+
+export async function listConfigs(): Promise<SearchConfig[]> {
+  const configs: SearchConfig[] = [];
+  for (const row of await configRepository.findAll()) {
+    const config = readStoredConfig(row);
+    if (config) configs.push(config);
+    else console.error(unreadable(row.id));
+  }
+  return configs;
+}
+
+export async function getConfig(id: string): Promise<SearchConfig> {
+  return toSearchConfig(found(await configRepository.findById(id), id));
+}
+
+export async function updateConfig(id: string, input: unknown): Promise<SearchConfig> {
+  return toSearchConfig(found(await configRepository.replace(id, parseSearchConfigInput(input)), id));
+}
+
+export async function deleteConfig(id: string): Promise<void> {
+  if (!(await configRepository.remove(id))) throw new NotFoundError("Search config", id);
+}
+
+export async function duplicateConfig(id: string): Promise<SearchConfig> {
+  const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...original } = await getConfig(id);
+  const name = original.name.slice(0, MAX_NAME_LENGTH - COPY_SUFFIX.length) + COPY_SUFFIX;
+  return toSearchConfig(await configRepository.insert({ ...original, name }));
+}
