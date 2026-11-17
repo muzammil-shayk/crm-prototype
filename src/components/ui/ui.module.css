@@ -1,0 +1,203 @@
+.empty {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 40px 32px;
+  background: var(--surface);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-lg);
+}
+
+.emptyTitle {
+  font-size: var(--text-md);
+}
+
+.emptyBody {
+  max-width: 58ch;
+  color: var(--muted);
+}
+
+.emptyAction {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--ink);
+  background: var(--info-bg);
+  border-radius: var(--radius);
+}
+
+.notice[data-tone="error"] {
+  color: #6e1f1b;
+  background: var(--danger-bg);
+}
+
+.notice[data-tone="warning"] {
+  color: #4f3600;
+  background: var(--warning-bg);
+}
+
+.notice[data-tone="success"] {
+  color: #1f4424;
+  background: var(--strong-bg);
+}
+
+.noticeBody {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.noticeTitle {
+  font-weight: 600;
+}
+
+.loading {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.skeletonRow {
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px;
+  background: var(--surface);
+}
+
+.skeletonLine {
+  display: block;
+  width: min(420px, 70%);
+  height: 10px;
+  background: var(--sunken);
+  border-radius: 3px;
+  animation: pulse 1.6s var(--ease) infinite alternate;
+}
+
+.skeletonShort {
+  width: min(220px, 40%);
+}
+
+@keyframes pulse {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonLine {
+    animation: none;
+  }
+}
+
+.dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 48px -12px rgb(29 28 26 / 0.22);
+}
+
+.dialog::backdrop {
+  background: rgb(29 28 26 / 0.32);
+}
+
+.dialog[open] {
+  animation: dialog-in var(--medium) var(--ease);
+}
+
+.dialog[data-variant="sheet"] {
+  width: min(600px, 100vw);
+  height: 100dvh;
+  max-width: 100vw;
+  max-height: 100dvh;
+  margin: 0 0 0 auto;
+  border-width: 0 0 0 1px;
+  border-radius: 0;
+}
+
+.dialog[data-variant="sheet"][open] {
+  animation-name: sheet-in;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0.4;
+    transform: translateX(24px);
+  }
+}
+
+.dialogFrame {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  height: 100%;
+}
+
+.dialogHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 20px 0 24px;
+}
+
+.dialogTitle {
+  padding-top: 6px;
+  font-size: var(--text-md);
+}
+
+.dialogClose {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  color: var(--muted);
+  border-radius: var(--radius);
+}
+
+.dialogClose:hover {
+  color: var(--ink);
+  background: var(--sunken);
+}
+
+.dialogBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 24px 24px;
+}
+
+.dialogFoot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+}
