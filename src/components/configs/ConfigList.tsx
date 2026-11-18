@@ -1,10 +1,9 @@
 import Link from "next/link";
 import type { SearchConfigSummary, SearchType } from "@/api-client/types";
 import { plural } from "@/components/format";
-import { RunTally } from "@/components/search/TierBar";
-import { STATUS_LABEL } from "@/components/search/run-labels";
-import { searchUrl } from "@/components/search/start-search";
+import { Menu } from "@/components/ui/Menu";
 import { RelativeTime } from "@/components/ui/RelativeTime";
+import { LastRunCell } from "./LastRunCell";
 import { EmptyState } from "@/components/ui/states";
 import { filterConfigs, type ConfigFilter } from "./filter-configs";
 import styles from "./configs.module.css";
@@ -94,59 +93,28 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
             <Link href={`/configs/${config.id}/edit`} className="button button-quiet">
               Edit
             </Link>
-            <button
-              type="button"
-              className="button button-quiet"
-              aria-disabled={busy || undefined}
-              onClick={() => {
-                if (!busy) actions.onDuplicate(config);
-              }}
-            >
-              Duplicate
-            </button>
-            <button
-              type="button"
-              className="button button-quiet is-danger"
-              aria-disabled={busy || undefined}
-              onClick={() => {
-                if (!busy) actions.onDelete(config);
-              }}
-            >
-              Delete
-            </button>
+            <Menu
+              label={`More actions for ${config.name}`}
+              disabled={busy}
+              items={[
+                {
+                  label: "Duplicate",
+                  onSelect: () => {
+                    actions.onDuplicate(config);
+                  },
+                },
+                {
+                  label: "Delete…",
+                  danger: true,
+                  onSelect: () => {
+                    actions.onDelete(config);
+                  },
+                },
+              ]}
+            />
           </div>
         </li>
       ))}
     </ul>
-  );
-}
-
-function LastRunCell({ config }: { config: SearchConfigSummary }) {
-  const run = config.lastRun;
-  return (
-    <dl className={styles.lastRun}>
-      <dt>Last run</dt>
-      {run ? (
-        <>
-          <dd className={styles.lastRunHead}>
-            <span className="badge" data-tone={run.status}>
-              {STATUS_LABEL[run.status]}
-            </span>
-            <RelativeTime iso={run.startedAt} />
-          </dd>
-          <dd>
-            {run.status === "completed" || run.status === "partial" ? (
-              <Link href={searchUrl(config.id, run.id)} className={styles.tallyLink}>
-                <RunTally status={run.status} tierCounts={run.tierCounts} />
-              </Link>
-            ) : (
-              <RunTally status={run.status} tierCounts={run.tierCounts} />
-            )}
-          </dd>
-        </>
-      ) : (
-        <dd className={styles.never}>Never run. Run search to fetch its first leads.</dd>
-      )}
-    </dl>
   );
 }

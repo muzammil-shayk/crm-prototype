@@ -215,3 +215,84 @@
   padding: 16px 24px;
   border-top: 1px solid var(--line);
 }
+
+.menuWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.menuTrigger {
+  width: 36px;
+  padding: 0;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  min-width: 184px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 28px -10px rgb(29 28 26 / 0.24);
+  transform-origin: top right;
+  transition:
+    opacity var(--fast) var(--ease),
+    transform var(--fast) var(--ease);
+}
+
+@starting-style {
+  .menu {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.menu[data-side="top"] {
+  top: auto;
+  bottom: calc(100% + 4px);
+  transform-origin: bottom right;
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  font-weight: 500;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--ink);
+  border-radius: 4px;
+}
+
+.menuItem:hover,
+.menuItem:focus-visible {
+  background: var(--sunken);
+}
+
+.menuItem:focus-visible {
+  outline-offset: -2px;
+}
+
+.menuItem[data-danger] {
+  color: var(--danger);
+}
+
+.menuItem[data-danger]:hover,
+.menuItem[data-danger]:focus-visible {
+  background: var(--danger-bg);
+}
+
+@media (pointer: coarse) {
+  .menuTrigger {
+    width: 44px;
+  }
+
+  .menuItem {
+    min-height: 44px;
+  }
+}

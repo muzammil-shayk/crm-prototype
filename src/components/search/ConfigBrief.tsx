@@ -1,21 +1,18 @@
-import type { LastRun, RunStage, SearchConfigSummary, SearchType } from "@/api-client/types";
-import { formatDateTime, formatDuration, plural } from "@/components/format";
+import type { RunStage, SearchConfigSummary, SearchType } from "@/api-client/types";
+import { plural } from "@/components/format";
 import { optionLabel } from "@/components/leads/LeadFacts";
 import { RUN_LIMITS } from "@/lib/run-limits";
 import { mentions } from "@/lib/text";
 import { TIER_THRESHOLDS } from "@/lib/tiers";
-import { STAGES, STATUS_LABEL } from "./run-labels";
-import { RunTally, TierBar, totalLeads } from "./TierBar";
+import { STAGES } from "./run-labels";
 import styles from "./search.module.css";
 
 interface ConfigBriefProps {
   config: SearchConfigSummary;
-  lastRun: LastRun;
   types: readonly SearchType[];
   running: boolean;
   starting: boolean;
   onStart: () => void;
-  onOpenRun: (runId: string) => void;
 }
 
 const listOf = (items: readonly string[]) =>
@@ -58,22 +55,13 @@ function stagePlan(config: SearchConfigSummary, industryLabels: readonly string[
   };
 }
 
-export function ConfigBrief({
-  config,
-  lastRun,
-  types,
-  running,
-  starting,
-  onStart,
-  onOpenRun,
-}: ConfigBriefProps) {
+export function ConfigBrief({ config, types, running, starting, onStart }: ConfigBriefProps) {
   const typeLabel = types.find((type) => type.id === config.type)?.label;
   const { keywords, locations, industries } = config.criteria;
   const plan = stagePlan(
     config,
     industries.map((value) => optionLabel(types, value)),
   );
-  const hasLeads = lastRun && totalLeads(lastRun.tierCounts) > 0;
 
   return (
     <article className={styles.brief} aria-labelledby="brief-title">
@@ -88,44 +76,7 @@ export function ConfigBrief({
         </p>
       </header>
 
-      <section className={styles.briefSection} aria-labelledby="brief-last-run">
-        <h3 id="brief-last-run" className={styles.briefHeading}>
-          Last run
-        </h3>
-        {lastRun ? (
-          <>
-            <p className={styles.runMeta}>
-              <span className="badge" data-tone={lastRun.status}>
-                {STATUS_LABEL[lastRun.status]}
-              </span>
-              <span>
-                <time dateTime={lastRun.startedAt}>{formatDateTime(lastRun.startedAt)}</time>
-              </span>
-              {lastRun.finishedAt ? (
-                <span>Took {formatDuration(lastRun.startedAt, lastRun.finishedAt)}</span>
-              ) : null}
-            </p>
-            {hasLeads ? (
-              <TierBar counts={lastRun.tierCounts} />
-            ) : (
-              <RunTally status={lastRun.status} tierCounts={lastRun.tierCounts} />
-            )}
-            <button
-              type="button"
-              className={`button ${styles.briefOpen}`}
-              onClick={() => {
-                onOpenRun(lastRun.id);
-              }}
-            >
-              Open this run
-            </button>
-          </>
-        ) : (
-          <p className={styles.briefNote}>
-            Not run yet. The first search fetches fresh posts and scores them.
-          </p>
-        )}
-      </section>
+      <p className={styles.briefNote}>Not run yet. The first search fetches fresh posts and scores them.</p>
 
       <section className={styles.briefSection} aria-labelledby="brief-plan">
         <h3 id="brief-plan" className={styles.briefHeading}>

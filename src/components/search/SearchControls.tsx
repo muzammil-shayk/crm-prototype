@@ -15,6 +15,12 @@ interface SearchControlsProps {
   onStart: (configId: string) => void;
 }
 
+function markOverflow(list: HTMLElement) {
+  const hidden = list.scrollHeight - list.clientHeight - list.scrollTop;
+  list.toggleAttribute("data-more-below", hidden > 1);
+  list.toggleAttribute("data-more-above", list.scrollTop > 1);
+}
+
 export function SearchControls({
   configs,
   configId,
@@ -30,11 +36,25 @@ export function SearchControls({
     const list = listRef.current;
     const option = list?.querySelector("input:checked")?.parentElement;
     if (!list || !option) return;
-    const top = option.offsetTop;
-    const bottom = top + option.offsetHeight;
+    const fade = parseFloat(getComputedStyle(list).getPropertyValue("--fade")) || 0;
+    const top = option.offsetTop - fade;
+    const bottom = option.offsetTop + option.offsetHeight + fade;
     if (top < list.scrollTop) list.scrollTop = top;
     else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
+    markOverflow(list);
   }, [configId]);
+
+  useEffect(() => {
+    const list = listRef.current;
+    if (!list || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(() => {
+      markOverflow(list);
+    });
+    observer.observe(list);
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   if (!configId) {
     return (
@@ -72,7 +92,13 @@ export function SearchControls({
       </select>
       <fieldset className={styles.picker}>
         <legend className={styles.controlLabel}>Config</legend>
-        <div ref={listRef} className={styles.pickerList}>
+        <div
+          ref={listRef}
+          className={styles.pickerList}
+          onScroll={(event) => {
+            markOverflow(event.currentTarget);
+          }}
+        >
           {configs.map((config) => (
             <label key={config.id} className={styles.pickerOption}>
               <input
@@ -88,25 +114,27 @@ export function SearchControls({
               {config.lastRun ? (
                 <RunTally status={config.lastRun.status} tierCounts={config.lastRun.tierCounts} />
               ) : (
-                <span className={styles.pickerNever}>Never run</span>
+                <span className={styles.pickerNever}>Not run yet</span>
               )}
             </label>
           ))}
         </div>
       </fieldset>
-      <Link href={`/configs/${configId}/edit`} className={styles.editLink}>
-        Edit this config
-      </Link>
-      <button
-        type="button"
-        className="button button-primary button-large"
-        aria-disabled={starting || running || undefined}
-        onClick={() => {
-          if (!starting && !running) onStart(configId);
-        }}
-      >
-        {running ? "Search running…" : starting ? "Starting…" : "Run search"}
-      </button>
+      <div className={styles.controlActions}>
+        <button
+          type="button"
+          className="button button-primary button-large"
+          aria-disabled={starting || running || undefined}
+          onClick={() => {
+            if (!starting && !running) onStart(configId);
+          }}
+        >
+          {running ? "Search running…" : starting ? "Starting…" : "Run search"}
+        </button>
+        <Link href={`/configs/${configId}/edit`} className="button button-large">
+          Edit config
+        </Link>
+      </div>
       {error ? (
         <Notice tone="error" live>
           <p>{error}</p>

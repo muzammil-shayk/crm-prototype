@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type SubmitEvent } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { api } from "@/api-client/api";
 import { ApiError, describeApiError } from "@/api-client/api-error";
 import type { FieldDefinition, SearchConfig, SearchTypeId } from "@/api-client/types";
@@ -12,7 +12,8 @@ import {
   type FieldErrors,
   type FormValues,
 } from "@/components/dynamic-form/form-values";
-import { searchUrl, startOrResumeSearch } from "@/components/search/start-search";
+import { searchUrl } from "@/components/search/select-search";
+import { startOrResumeSearch } from "@/components/search/start-search";
 import { ENVELOPE_KEYS, firstInvalidKey, keepErrors, mapIssues, validateEnvelope } from "./config-draft";
 
 type Intent = "save" | "run";
@@ -32,12 +33,21 @@ export function useConfigSubmit(config: SearchConfig | null, draft: Draft) {
   const [errors, setErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [pending, setPending] = useState<Intent | null>(null);
+  const [focusRequest, setFocusRequest] = useState<{ key: string; several: boolean } | null>(null);
+
+  useEffect(() => {
+    if (!focusRequest) return;
+    const summaryLink = document.querySelector<HTMLElement>("[data-error-summary] a");
+    const field = document.getElementById(fieldId(focusRequest.key));
+    (focusRequest.several ? (summaryLink ?? field) : field)?.focus();
+  }, [focusRequest]);
 
   const showErrors = (next: FieldErrors, message: string) => {
     setErrors(next);
     setFormError(message);
-    const key = firstInvalidKey(next, [...ENVELOPE_KEYS, ...draft.fields.map((field) => field.key)]);
-    if (key) document.getElementById(fieldId(key))?.focus();
+    const order = [...ENVELOPE_KEYS, ...draft.fields.map((field) => field.key)];
+    const key = firstInvalidKey(next, order);
+    if (key) setFocusRequest({ key, several: order.filter((item) => next[item]).length > 1 });
   };
 
   const clearError = (key: string) => {

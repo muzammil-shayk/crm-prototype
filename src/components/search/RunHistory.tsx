@@ -103,7 +103,7 @@ export function RunHistory({
           }}
         >
           Show older runs
-          <span className={styles.olderCount}>{runs.length - shown}</span>
+          <span className={`${styles.olderCount} mono`}>{runs.length - shown}</span>
         </button>
       ) : null}
     </section>

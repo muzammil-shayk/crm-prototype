@@ -14,8 +14,10 @@ interface PollState {
   error: unknown;
 }
 
-export function useRunPolling(runId: string | null) {
-  const [state, setState] = useState<PollState | null>(null);
+export function useRunPolling(runId: string | null, initial?: RunSnapshot) {
+  const [state, setState] = useState<PollState | null>(() =>
+    initial && initial.run.id === runId ? { runId, snapshot: initial, error: null } : null,
+  );
 
   useEffect(() => {
     if (!runId) return;

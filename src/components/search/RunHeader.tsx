@@ -67,14 +67,20 @@ export function RunHeader({ run, types, onRunChange }: RunHeaderProps) {
         {runAnnouncement(run)}
       </p>
       {run.status === "running" ? (
-        <button
-          type="button"
-          className="button"
-          aria-disabled={cancelling || undefined}
-          onClick={() => void cancel()}
-        >
-          {cancelling ? "Cancelling…" : "Cancel search"}
-        </button>
+        <div className={styles.cancel}>
+          <button
+            type="button"
+            className="button"
+            aria-disabled={cancelling || undefined}
+            aria-describedby="cancel-hint"
+            onClick={() => void cancel()}
+          >
+            {cancelling ? "Cancelling…" : "Cancel search"}
+          </button>
+          <p id="cancel-hint" className={styles.cancelHint}>
+            Leads already scored are kept
+          </p>
+        </div>
       ) : null}
       {run.status === "running" || totalLeads(run.tierCounts) > 0 ? (
         <div className={styles.runTiers}>

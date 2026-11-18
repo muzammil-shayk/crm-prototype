@@ -12,15 +12,15 @@ export function ConfigAside() {
         </h2>
         <ul className={styles.limits}>
           <li>
-            <span className="numeric">{RUN_LIMITS.maxQueries}</span> queries at most, written from the search
+            <span className="mono">{RUN_LIMITS.maxQueries}</span> queries at most, written from the search
             terms
           </li>
           <li>
-            <span className="numeric">{RUN_LIMITS.maxLeads}</span> posts scored at most, after duplicates,
+            <span className="mono">{RUN_LIMITS.maxLeads}</span> posts scored at most, after duplicates,
             exclusions and posts outside the location or industry filters are removed
           </li>
           <li>
-            <span className="numeric">{RUN_LIMITS.maxCostUnits}</span> provider calls before the run stops
+            <span className="mono">{RUN_LIMITS.maxCostUnits}</span> provider calls before the run stops
           </li>
         </ul>
       </section>

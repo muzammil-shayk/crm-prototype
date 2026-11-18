@@ -35,7 +35,7 @@
   color: var(--ink-2);
 }
 
-.limits .numeric {
+.limits :global(.mono) {
   display: inline-block;
   min-width: 2ch;
   margin-right: 4px;
@@ -60,6 +60,35 @@
 .form {
   display: grid;
   gap: 20px;
+}
+
+.form :is(input, textarea, select, fieldset, a) {
+  scroll-margin: 88px 0 104px;
+}
+
+.errorSummary {
+  scroll-margin-top: 88px;
+}
+
+.problems {
+  display: grid;
+  gap: 2px;
+  margin-top: 4px;
+  padding-left: 18px;
+}
+
+.problems a {
+  font-weight: 600;
+  color: inherit;
+}
+
+@media (pointer: coarse) {
+  .problems a {
+    display: inline-flex;
+    align-items: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .section {
@@ -166,7 +195,6 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
-  margin: 0 -1px;
   padding: 14px 0;
   background: var(--paper);
   border-top: 1px solid var(--line);

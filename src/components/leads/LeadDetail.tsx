@@ -7,6 +7,7 @@ import { ExternalIcon } from "@/components/ui/icons";
 import { Notice } from "@/components/ui/states";
 import { highlight } from "./highlight";
 import { LeadFacts } from "./LeadFacts";
+import { noQuoteVerdict } from "./LeadRow";
 import { LeadStatusControl } from "./LeadStatusControl";
 import { webUrl } from "./safe-url";
 import styles from "./leads.module.css";
@@ -68,7 +69,11 @@ function LeadDetailBody({
   return (
     <div className={styles.detail}>
       <div className={styles.verdict}>
-        <span className={`${styles.verdictScore} mono`} data-tier={lead.tier}>
+        <span
+          className={`${styles.verdictScore} mono`}
+          data-tier={lead.tier}
+          data-no-quote={noQuoteVerdict(lead) ? true : undefined}
+        >
           {lead.score}
           <span className={styles.verdictOutOf}>/100</span>
         </span>
@@ -76,7 +81,7 @@ function LeadDetailBody({
           <span className="badge" data-tone={lead.tier}>
             {TIER_LABEL[lead.tier]}
           </span>
-          <p className={styles.verdictMeaning}>{TIER_MEANING[lead.tier]}</p>
+          <p className={styles.verdictMeaning}>{noQuoteVerdict(lead) ?? TIER_MEANING[lead.tier]}</p>
         </div>
       </div>
 
@@ -115,7 +120,7 @@ function LeadDetailBody({
 
       <LeadFacts lead={lead} types={types} configType={configType} />
 
-      <details className={styles.post}>
+      <details className={styles.post} open>
         <summary>Full post</summary>
         <p className={styles.postBody}>
           {highlight(lead.body, lead.evidence).map((segment, index) =>

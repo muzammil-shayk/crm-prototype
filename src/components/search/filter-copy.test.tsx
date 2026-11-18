@@ -3,7 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { RunStats, SearchConfigSummary, SearchType } from "@/api-client/types";
 import { ConfigBrief, targetRules } from "./ConfigBrief";
-import { RunStatsList } from "./RunOutcome";
+import { biggestFilter, noMatchAdvice, RunStatsList } from "./RunOutcome";
 
 afterEach(cleanup);
 
@@ -53,6 +53,8 @@ const stats: RunStats = {
   duplicates: 2,
   excluded: 1,
   outsideFilters: 0,
+  outsideLocation: 0,
+  outsideIndustry: 0,
   evaluated: 7,
   evaluationFailures: 0,
   costUnits: 10,
@@ -84,15 +86,7 @@ describe("targetRules", () => {
 describe("ConfigBrief", () => {
   it("spells out the config's filters with industry labels", () => {
     render(
-      <ConfigBrief
-        config={gulf}
-        lastRun={null}
-        types={types}
-        running={false}
-        starting={false}
-        onStart={() => undefined}
-        onOpenRun={() => undefined}
-      />,
+      <ConfigBrief config={gulf} types={types} running={false} starting={false} onStart={() => undefined} />,
     );
     expect(
       screen.getByText(
@@ -103,15 +97,34 @@ describe("ConfigBrief", () => {
 });
 
 describe("RunStatsList", () => {
-  it("hides the filter count when nothing fell outside the filters", () => {
+  it("hides the location and industry counts when nothing fell outside them", () => {
     render(<RunStatsList stats={stats} />);
-    expect(screen.queryByText("Outside location or industry")).toBeNull();
+    expect(screen.queryByText("Outside your locations")).toBeNull();
+    expect(screen.queryByText("Outside your industries")).toBeNull();
     expect(screen.getAllByRole("term")).toHaveLength(6);
   });
 
-  it("shows how many posts fell outside the filters", () => {
-    render(<RunStatsList stats={{ ...stats, outsideFilters: 4 }} />);
-    const term = screen.getByText("Outside location or industry");
-    expect(term.nextElementSibling?.textContent).toBe("4");
+  it("shows each filter's count on its own once it removed posts", () => {
+    render(<RunStatsList stats={{ ...stats, outsideFilters: 4, outsideLocation: 4 }} />);
+    expect(screen.getByText("Outside your locations").nextElementSibling?.textContent).toBe("4");
+    expect(screen.queryByText("Outside your industries")).toBeNull();
+  });
+});
+
+describe("no-match advice", () => {
+  it("names the filter that removed the most posts", () => {
+    const filtered = { ...stats, excluded: 2, outsideFilters: 9, outsideLocation: 3, outsideIndustry: 6 };
+    expect(biggestFilter(filtered)).toEqual({ name: "Your industry filter", removed: 6 });
+    expect(noMatchAdvice(filtered)).toBe(
+      "Your industry filter removed the most: 6 of 14 posts fetched. Loosen it or try broader keywords, then run it again.",
+    );
+  });
+
+  it("says when nothing came back or no filter removed anything", () => {
+    expect(noMatchAdvice({ ...stats, retrieved: 0 })).toMatch(/^No posts came back/);
+    expect(biggestFilter({ ...stats, excluded: 0 })).toBeNull();
+    expect(noMatchAdvice({ ...stats, excluded: 0 })).toBe(
+      "Try broader keywords or fewer exclusions, then run it again.",
+    );
   });
 });

@@ -55,3 +55,11 @@ export const PlusIcon = () => (
     <path d="M8 3v10M3 8h10" />
   </Icon>
 );
+
+export const MoreIcon = () => (
+  <Icon>
+    <circle cx="3.5" cy="8" r="0.6" fill="currentColor" />
+    <circle cx="8" cy="8" r="0.6" fill="currentColor" />
+    <circle cx="12.5" cy="8" r="0.6" fill="currentColor" />
+  </Icon>
+);

@@ -69,7 +69,7 @@ function TierGroup({
           <span className="badge" data-tone={tier}>
             {TIER_LABEL[tier]}
           </span>
-          <span className="numeric">{leads.length}</span>
+          <span className="mono">{leads.length}</span>
         </h3>
         <p className={styles.groupMeaning}>{TIER_MEANING[tier]}</p>
       </header>

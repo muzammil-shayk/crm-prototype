@@ -1,13 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import type { SearchConfig, SearchType, SearchTypeId } from "@/api-client/types";
 import { DynamicForm } from "@/components/dynamic-form/DynamicForm";
 import { valuesFromCriteria, type FormValues } from "@/components/dynamic-form/form-values";
-import { Notice } from "@/components/ui/states";
+import { ENVELOPE_LABELS } from "./config-draft";
 import styles from "./config-form.module.css";
 import { EnvelopeFields } from "./EnvelopeFields";
+import { CancelEdit, ErrorSummary } from "./FormProblems";
 import { TypePicker } from "./TypePicker";
 import { useConfigSubmit } from "./use-config-submit";
 
@@ -32,14 +32,20 @@ export function ConfigEditor({ types, config }: ConfigEditorProps) {
     fields,
     values,
   });
+  const draft = JSON.stringify({ type, envelope, values });
+  const [savedDraft] = useState(draft);
+  const labels: Record<string, string> = {
+    ...ENVELOPE_LABELS,
+    ...Object.fromEntries(fields.map((field) => [field.key, field.label])),
+  };
+  const problems = Object.keys(labels).flatMap((key) => {
+    const message = errors[key];
+    return message ? [{ key, label: labels[key] ?? key, message }] : [];
+  });
 
   return (
     <form className={styles.form} noValidate onSubmit={onSubmit} aria-busy={pending !== null}>
-      {formError ? (
-        <Notice tone="error" live>
-          <p>{formError}</p>
-        </Notice>
-      ) : null}
+      {formError ? <ErrorSummary message={formError} problems={problems} /> : null}
 
       <section className={styles.section} aria-labelledby="basics-heading">
         <h2 id="basics-heading" className={styles.sectionTitle}>
@@ -81,9 +87,7 @@ export function ConfigEditor({ types, config }: ConfigEditorProps) {
       </section>
 
       <div className={styles.actions}>
-        <Link href="/" className="button button-quiet">
-          Cancel
-        </Link>
+        <CancelEdit dirty={draft !== savedDraft} />
         <button
           type="submit"
           value="save"

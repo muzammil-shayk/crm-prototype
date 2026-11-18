@@ -5,6 +5,11 @@ import type { FieldErrors } from "@/components/dynamic-form/form-values";
 export const NAME_MAX = 120;
 export const DESCRIPTION_MAX = 4000;
 export const ENVELOPE_KEYS = ["name", "description", "type"] as const;
+export const ENVELOPE_LABELS: Record<(typeof ENVELOPE_KEYS)[number], string> = {
+  name: "Name",
+  description: "Description",
+  type: "Search type",
+};
 
 export function validateEnvelope(name: string, description: string): FieldErrors {
   const errors: Record<string, string> = {};

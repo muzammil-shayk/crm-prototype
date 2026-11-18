@@ -36,7 +36,7 @@ export function LeadFilters({ filter, tierCounts, total, onChange }: LeadFilters
               }}
             />
             <span>{option.label}</span>
-            <span className={`${styles.segmentCount} numeric`}>
+            <span className={`${styles.segmentCount} mono`}>
               {option.value === "all" ? total : tierCounts[option.value]}
             </span>
           </label>

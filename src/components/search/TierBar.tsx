@@ -40,7 +40,7 @@ export function TierBar({ counts, pending = false }: { counts: TierCounts; pendi
             <li key={tier} className={styles.legendItem}>
               <span className={styles.swatch} data-tier={tier} aria-hidden="true" />
               {TIER_LABEL[tier]}
-              <span className={`${styles.legendCount} numeric`}>{counts[tier]}</span>
+              <span className={`${styles.legendCount} mono`}>{counts[tier]}</span>
             </li>
           ))}
         </ul>
@@ -49,28 +49,32 @@ export function TierBar({ counts, pending = false }: { counts: TierCounts; pendi
   );
 }
 
-function TierBarMini({ counts }: { counts: TierCounts }) {
-  const total = totalLeads(counts);
-  if (total === 0) return <span className={styles.tallyText}>No leads matched</span>;
+function TierBarMini({ counts, label }: { counts: TierCounts; label: string }) {
   return (
     <span className={styles.mini}>
       <Segments counts={counts} size="mini" />
       <span className={styles.miniText}>
-        {plural(total, "lead")}
-        {counts.strong > 0 ? `, ${counts.strong} strong` : ""}
+        {label}
         <span className="visually-hidden">: {tierBreakdown(counts)}</span>
       </span>
     </span>
   );
 }
 
-const NO_TALLY: Partial<Record<RunStatus, string>> = {
-  running: "Scoring in progress",
-  failed: "No leads saved",
-  cancelled: "Cancelled, no leads kept",
-};
+export function tallyLabel(status: RunStatus, counts: TierCounts): string {
+  const total = totalLeads(counts);
+  if (status === "running") return "Scoring in progress";
+  if (status === "cancelled")
+    return total > 0 ? `Cancelled, ${plural(total, "lead")} kept` : "Cancelled, no leads kept";
+  if (total === 0) return status === "failed" ? "No leads saved" : "No leads matched";
+  return `${plural(total, "lead")}${counts.strong > 0 ? `, ${counts.strong} strong` : ""}`;
+}
 
 export function RunTally({ status, tierCounts }: { status: RunStatus; tierCounts: TierCounts }) {
-  const text = NO_TALLY[status];
-  return text ? <span className={styles.tallyText}>{text}</span> : <TierBarMini counts={tierCounts} />;
+  const label = tallyLabel(status, tierCounts);
+  return status === "running" || totalLeads(tierCounts) === 0 ? (
+    <span className={styles.tallyText}>{label}</span>
+  ) : (
+    <TierBarMini counts={tierCounts} label={label} />
+  );
 }

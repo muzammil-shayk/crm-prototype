@@ -150,13 +150,15 @@ main:focus {
 }
 
 .page-title {
-  font-size: var(--text-xl);
-  letter-spacing: -0.015em;
+  font-size: var(--text-display);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
 }
 
 .page-lede {
   max-width: 62ch;
-  margin-top: 4px;
+  margin-top: 8px;
+  font-size: var(--text-md);
   color: var(--muted);
 }
 

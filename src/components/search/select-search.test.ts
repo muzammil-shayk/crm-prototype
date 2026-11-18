@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SearchConfigSummary, SearchRun } from "@/api-client/types";
-import { withLiveRun } from "./live-run";
+import { searchUrl, selectSearch, withLiveRun } from "./select-search";
 
 const counts = { strong: 1, medium: 2, weak: 3 };
 const lastRun = (id: string, startedAt: string) =>
@@ -43,5 +43,39 @@ describe("withLiveRun", () => {
   it("gives a never-run config its first run", () => {
     const [updated] = withLiveRun([config("c2", null)], run("r1", "c2", "2026-11-18T10:00:00Z"));
     expect(updated?.lastRun?.id).toBe("r1");
+  });
+});
+
+describe("selectSearch", () => {
+  const saved = [config("c1", lastRun("r1", "2026-11-18T10:00:00Z")), config("c2", null)];
+  const want = (configId: string | null, runId: string | null = null) => ({ configId, runId });
+
+  it("opens the chosen config's latest run when the URL names no run", () => {
+    const picked = selectSearch(saved, want("c1"));
+    expect(picked.config?.id).toBe("c1");
+    expect(picked.runId).toBe("r1");
+    expect(picked.missing).toBe(false);
+  });
+
+  it("keeps a run named in the URL and shows no run for a never-run config", () => {
+    expect(selectSearch(saved, want("c1", "r0")).runId).toBe("r0");
+    expect(selectSearch(saved, want("c2")).runId).toBeNull();
+  });
+
+  it("falls back to the first config and flags a config that no longer exists", () => {
+    const gone = selectSearch(saved, want("deleted"));
+    expect(gone.config?.id).toBe("c1");
+    expect(gone.runId).toBe("r1");
+    expect(gone.missing).toBe(true);
+    expect(selectSearch(saved, want(null)).missing).toBe(false);
+    expect(selectSearch([], want(null)).config).toBeNull();
+  });
+});
+
+describe("searchUrl", () => {
+  it("adds the run only when there is one", () => {
+    expect(searchUrl("c1")).toBe("/search?config=c1");
+    expect(searchUrl("c1", null)).toBe("/search?config=c1");
+    expect(searchUrl("c1", "r1")).toBe("/search?config=c1&run=r1");
   });
 });
