@@ -104,9 +104,11 @@
   position: relative;
   max-height: 352px;
   margin: 0 -8px;
-  padding: 4px 8px;
+  padding: 4px 8px calc(4px + var(--tail, 0px));
   overflow-y: auto;
   overscroll-behavior: contain;
+  scroll-snap-type: y proximity;
+  scroll-padding-block: 4px;
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
   background:
@@ -123,6 +125,7 @@
   padding: 10px 12px;
   border-radius: var(--radius);
   cursor: pointer;
+  scroll-snap-align: start;
   transition: background-color var(--fast) var(--ease);
 }
 

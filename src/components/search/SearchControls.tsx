@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useLayoutEffect, useRef } from "react";
 import type { SearchConfigSummary } from "@/api-client/types";
 import { EmptyState, Notice } from "@/components/ui/states";
 import { RunTally } from "./TierBar";
@@ -15,6 +15,30 @@ interface SearchControlsProps {
   onStart: (configId: string) => void;
 }
 
+function settleList(list: HTMLElement) {
+  if (!list.clientHeight) return;
+  const current = list.scrollTop;
+  list.style.setProperty("--tail", "0px");
+  const rowTops = Array.from(list.children, (row) => (row as HTMLElement).offsetTop);
+  const inset = rowTops[0] ?? 0;
+  const starts = rowTops.map((rowTop) => rowTop - inset);
+  const max = list.scrollHeight - list.clientHeight;
+  const end = starts.find((start) => start >= max) ?? max;
+  list.style.setProperty("--tail", `${end - max}px`);
+  const option = list.querySelector("input:checked")?.closest("label");
+  if (!option) return;
+  const { offsetTop: top, offsetHeight: height } = option;
+  const visible = top >= current && top + height <= current + list.clientHeight;
+  const target = visible ? current : top - (list.clientHeight - height) / 2;
+  const lowest = top + height + inset - list.clientHeight;
+  list.scrollTop = starts
+    .filter((start) => start >= lowest && start <= top - inset && start <= end)
+    .reduce(
+      (best, start) => (Math.abs(start - target) < Math.abs(best - target) ? start : best),
+      top - inset,
+    );
+}
+
 export function SearchControls({
   configs,
   configId,
@@ -26,15 +50,18 @@ export function SearchControls({
 }: SearchControlsProps) {
   const listRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const list = listRef.current;
-    const option = list?.querySelector("input:checked")?.closest("label");
-    if (!list || !option) return;
-    const { offsetTop: top, offsetHeight: height } = option;
-    if (top < list.scrollTop || top + height > list.scrollTop + list.clientHeight) {
-      list.scrollTop = top - (list.clientHeight - height) / 2;
-    }
-  }, [configId]);
+    if (!list) return;
+    settleList(list);
+    const observer = new ResizeObserver(() => {
+      settleList(list);
+    });
+    observer.observe(list, { box: "border-box" });
+    return () => {
+      observer.disconnect();
+    };
+  }, [configId, configs.length]);
 
   if (!configId) {
     return (
