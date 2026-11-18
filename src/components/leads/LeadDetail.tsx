@@ -8,6 +8,7 @@ import { Notice } from "@/components/ui/states";
 import { highlight } from "./highlight";
 import { LeadFacts } from "./LeadFacts";
 import { LeadStatusControl } from "./LeadStatusControl";
+import { webUrl } from "./safe-url";
 import styles from "./leads.module.css";
 
 interface LeadDetailProps {
@@ -25,15 +26,7 @@ export function LeadDetail({ lead, configType, types, onClose, onLeadChange }: L
       onClose={onClose}
       variant="sheet"
       title={lead?.title ?? ""}
-      footer={
-        lead ? (
-          <a className="button" href={lead.url} target="_blank" rel="noopener noreferrer">
-            Open the original post on {lead.source}
-            <ExternalIcon />
-            <span className="visually-hidden">(opens in a new tab)</span>
-          </a>
-        ) : null
-      }
+      footer={lead ? <OriginalPost lead={lead} /> : null}
     >
       {lead ? (
         <LeadDetailBody
@@ -45,6 +38,24 @@ export function LeadDetail({ lead, configType, types, onClose, onLeadChange }: L
         />
       ) : null}
     </Dialog>
+  );
+}
+
+function OriginalPost({ lead }: { lead: Lead }) {
+  const href = webUrl(lead.url);
+  if (!href) {
+    return (
+      <p className={styles.unsafeUrl}>
+        Original post on {lead.source}: <span className="mono">{lead.url}</span>
+      </p>
+    );
+  }
+  return (
+    <a className="button" href={href} target="_blank" rel="noopener noreferrer">
+      Open the original post on {lead.source}
+      <ExternalIcon />
+      <span className="visually-hidden">(opens in a new tab)</span>
+    </a>
   );
 }
 
@@ -89,8 +100,8 @@ function LeadDetailBody({
         </h3>
         {lead.evidence.length > 0 ? (
           <ul className={styles.evidence}>
-            {lead.evidence.map((quote) => (
-              <li key={quote}>
+            {lead.evidence.map((quote, index) => (
+              <li key={index}>
                 <blockquote className={styles.quote}>{quote}</blockquote>
               </li>
             ))}

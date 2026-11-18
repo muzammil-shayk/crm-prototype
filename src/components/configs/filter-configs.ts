@@ -19,3 +19,9 @@ export function filterConfigs(
     return haystack.includes(needle);
   });
 }
+
+export function focusAfterRemoval(visibleIds: readonly string[], removedId: string): string | null {
+  const index = visibleIds.indexOf(removedId);
+  if (index === -1) return null;
+  return visibleIds[index + 1] ?? visibleIds[index - 1] ?? null;
+}

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/api-client/api";
 import { describeApiError } from "@/api-client/api-error";
 import type { SearchConfig } from "@/api-client/types";
@@ -11,9 +11,9 @@ import { searchUrl, startOrResumeSearch } from "@/components/search/start-search
 import { PlusIcon } from "@/components/ui/icons";
 import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
 import { ConfigFilters } from "./ConfigFilters";
-import { ConfigList } from "./ConfigList";
+import { ConfigList, configLinkId } from "./ConfigList";
 import { DeleteConfigDialog } from "./DeleteConfigDialog";
-import { NO_FILTER, type ConfigFilter } from "./filter-configs";
+import { filterConfigs, focusAfterRemoval, NO_FILTER, type ConfigFilter } from "./filter-configs";
 
 export function ConfigsScreen() {
   const router = useRouter();
@@ -23,10 +23,19 @@ export function ConfigsScreen() {
   const [deleting, setDeleting] = useState<SearchConfig | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [focusTarget, setFocusTarget] = useState<{ id: string | null } | null>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (!focusTarget) return;
+    const link = focusTarget.id ? document.getElementById(configLinkId(focusTarget.id)) : null;
+    (link ?? headingRef.current)?.focus();
+  }, [focusTarget]);
 
   const typeList = types.resource.status === "ready" ? types.resource.data : [];
 
   const act = async (config: SearchConfig, action: () => Promise<void>) => {
+    if (busyId !== null) return;
     setBusyId(config.id);
     setActionError(null);
     try {
@@ -54,7 +63,9 @@ export function ConfigsScreen() {
     <div className="page">
       <div className="page-head">
         <div>
-          <h1 className="page-title">Search configs</h1>
+          <h1 ref={headingRef} className="page-title" tabIndex={-1}>
+            Search configs
+          </h1>
           <p className="page-lede">
             Each config describes the leads you want. Run one to fetch and score fresh posts.
           </p>
@@ -101,6 +112,10 @@ export function ConfigsScreen() {
           setDeleting(null);
         }}
         onDeleted={(id) => {
+          if (configs.resource.status === "ready") {
+            const visible = filterConfigs(configs.resource.data, filter).map((config) => config.id);
+            setFocusTarget({ id: focusAfterRemoval(visible, id) });
+          }
           configs.update((list) => list.filter((config) => config.id !== id));
           setDeleting(null);
         }}

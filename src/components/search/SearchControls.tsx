@@ -42,6 +42,7 @@ export function SearchControls({ configs, types, configId, currentRun, ...handle
   const typeLabel = types.find((type) => type.id === config.type)?.label;
 
   const start = async () => {
+    if (starting || running) return;
     setStarting(true);
     setError(null);
     try {
@@ -82,7 +83,7 @@ export function SearchControls({ configs, types, configId, currentRun, ...handle
       <button
         type="button"
         className="button button-primary button-large"
-        disabled={starting || running}
+        aria-disabled={starting || running || undefined}
         onClick={() => void start()}
       >
         {running ? "Search running…" : starting ? "Starting…" : "Search"}

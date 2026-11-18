@@ -1,4 +1,4 @@
-import { TIER_THRESHOLDS } from "@/modules/classifier/classify-lead";
+import { TIER_THRESHOLDS } from "@/lib/tiers";
 import type { LeadStatus, LimitHit, RunStage, RunStatus, Tier } from "@/api-client/types";
 
 export const STAGES: readonly { id: RunStage; label: string }[] = [

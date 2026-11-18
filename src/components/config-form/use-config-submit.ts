@@ -1,0 +1,98 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState, type SubmitEvent } from "react";
+import { api } from "@/api-client/api";
+import { ApiError, describeApiError } from "@/api-client/api-error";
+import type { FieldDefinition, SearchConfig, SearchTypeId } from "@/api-client/types";
+import { fieldId } from "@/components/dynamic-form/DynamicForm";
+import {
+  toCriteria,
+  validateFields,
+  type FieldErrors,
+  type FormValues,
+} from "@/components/dynamic-form/form-values";
+import { searchUrl, startOrResumeSearch } from "@/components/search/start-search";
+import { ENVELOPE_KEYS, firstInvalidKey, keepErrors, mapIssues, validateEnvelope } from "./config-draft";
+
+type Intent = "save" | "run";
+
+interface Draft {
+  type: SearchTypeId;
+  name: string;
+  description: string;
+  fields: readonly FieldDefinition[];
+  values: FormValues;
+}
+
+const NEEDS_ATTENTION = "Some fields need attention before this config can be saved.";
+
+export function useConfigSubmit(config: SearchConfig | null, draft: Draft) {
+  const router = useRouter();
+  const [errors, setErrors] = useState<FieldErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [pending, setPending] = useState<Intent | null>(null);
+
+  const showErrors = (next: FieldErrors, message: string) => {
+    setErrors(next);
+    setFormError(message);
+    const key = firstInvalidKey(next, [...ENVELOPE_KEYS, ...draft.fields.map((field) => field.key)]);
+    if (key) document.getElementById(fieldId(key))?.focus();
+  };
+
+  const clearError = (key: string) => {
+    if (errors[key]) setErrors({ ...errors, [key]: undefined });
+  };
+
+  const keepErrorsFor = (fields: readonly FieldDefinition[]) => {
+    const next = keepErrors(errors, [...ENVELOPE_KEYS, ...fields.map((field) => field.key)]);
+    setErrors(next);
+    if (formError === NEEDS_ATTENTION && Object.keys(next).length === 0) setFormError(null);
+  };
+
+  const submit = async (intent: Intent) => {
+    if (pending) return;
+    const { type, fields, values } = draft;
+    const problems = {
+      ...validateEnvelope(draft.name, draft.description),
+      ...validateFields(fields, values),
+    };
+    if (Object.keys(problems).length > 0) {
+      showErrors(problems, NEEDS_ATTENTION);
+      return;
+    }
+    setPending(intent);
+    setFormError(null);
+    const body = {
+      type,
+      name: draft.name.trim(),
+      description: draft.description.trim(),
+      criteria: toCriteria(fields, values),
+    };
+    try {
+      const saved = config ? await api.configs.update(config.id, body) : await api.configs.create(body);
+      if (intent === "save") {
+        router.push("/");
+        return;
+      }
+      const run = await startOrResumeSearch(saved.id).catch(() => null);
+      router.push(searchUrl(saved.id, run?.id));
+    } catch (error) {
+      setPending(null);
+      if (error instanceof ApiError && error.code === "validation_failed") {
+        const { fieldErrors, unplaced } = mapIssues(error.details, fields);
+        showErrors(fieldErrors, unplaced.length > 0 ? unplaced.join(" ") : NEEDS_ATTENTION);
+      } else {
+        setFormError(describeApiError(error));
+      }
+    }
+  };
+
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const { submitter } = event.nativeEvent;
+    void submit(submitter instanceof HTMLButtonElement && submitter.value === "run" ? "run" : "save");
+  };
+
+  return { errors, formError, pending, clearError, keepErrorsFor, onSubmit };
+}

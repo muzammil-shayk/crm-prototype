@@ -6,7 +6,7 @@ import { leadRowsFor } from "@/modules/leads/lead-repository";
 import { RUN_STAGES, type LimitHit, type RunStage, type RunStats } from "./pipeline-types";
 import type { RunProgress, SearchOutcome } from "./run-search";
 
-export const RUN_STATUSES = ["running", "completed", "partial", "failed", "cancelled"] as const;
+const RUN_STATUSES = ["running", "completed", "partial", "failed", "cancelled"] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
 
 export interface SearchRun {

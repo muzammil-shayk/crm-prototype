@@ -43,13 +43,18 @@ export function RunStatsList({ stats }: { stats: RunStats }) {
   );
 }
 
+export function runExplanations(run: SearchRun): string[] {
+  const failures = run.stats.queryFailures + run.stats.evaluationFailures;
+  const pointer = run.warnings.length > 0 ? " Details below." : "";
+  return [
+    ...run.limitsHit.map((limit) => LIMIT_EXPLANATION[limit]),
+    ...(failures > 0 ? [`${plural(failures, "provider call")} failed after retries.${pointer}`] : []),
+  ];
+}
+
 export function RunOutcome({ run, leadCount }: { run: SearchRun; leadCount: number }) {
   const { tone, title } = summary(run, leadCount);
-  const failures = run.stats.queryFailures + run.stats.evaluationFailures;
-  const explanations = [
-    ...run.limitsHit.map((limit) => LIMIT_EXPLANATION[limit]),
-    ...(failures > 0 ? [`${plural(failures, "provider call")} failed after retries. Details below.`] : []),
-  ];
+  const explanations = runExplanations(run);
 
   return (
     <div className={styles.outcome}>

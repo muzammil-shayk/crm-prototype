@@ -5,6 +5,8 @@ import { EmptyState } from "@/components/ui/states";
 import { filterConfigs, type ConfigFilter } from "./filter-configs";
 import styles from "./configs.module.css";
 
+export const configLinkId = (id: string) => `config-${id}`;
+
 interface ConfigListProps {
   configs: readonly SearchConfig[];
   types: readonly SearchType[];
@@ -51,13 +53,14 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
   }
 
   const labelOf = (id: string) => types.find((type) => type.id === id)?.label ?? id;
+  const busy = busyId !== null;
 
   return (
     <ul className={styles.list} aria-label="Search configs">
       {visible.map((config) => (
         <li key={config.id} className={styles.row} aria-busy={busyId === config.id || undefined}>
           <div className={styles.summary}>
-            <Link href={`/configs/${config.id}/edit`} className={styles.name}>
+            <Link id={configLinkId(config.id)} href={`/configs/${config.id}/edit`} className={styles.name}>
               {config.name}
             </Link>
             {config.description ? <p className={styles.description}>{config.description}</p> : null}
@@ -82,9 +85,9 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
             <button
               type="button"
               className="button"
-              disabled={busyId !== null}
+              aria-disabled={busy || undefined}
               onClick={() => {
-                actions.onRun(config);
+                if (!busy) actions.onRun(config);
               }}
             >
               Run search
@@ -95,9 +98,9 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
             <button
               type="button"
               className="button button-quiet"
-              disabled={busyId !== null}
+              aria-disabled={busy || undefined}
               onClick={() => {
-                actions.onDuplicate(config);
+                if (!busy) actions.onDuplicate(config);
               }}
             >
               Duplicate
@@ -105,9 +108,9 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
             <button
               type="button"
               className="button button-quiet is-danger"
-              disabled={busyId !== null}
+              aria-disabled={busy || undefined}
               onClick={() => {
-                actions.onDelete(config);
+                if (!busy) actions.onDelete(config);
               }}
             >
               Delete

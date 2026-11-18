@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FieldDefinition } from "@/api-client/types";
+import { searchTypes } from "@/modules/search-types/registry";
 import { toCriteria, validateFields, valuesFromCriteria } from "./form-values";
 import { addTags } from "./fields/TagsField";
 
@@ -57,13 +58,29 @@ describe("toCriteria", () => {
 describe("validateFields", () => {
   it("mirrors the server's required and number rules", () => {
     expect(validateFields(fields, { keywords: ["  "], minBudgetUsd: "-5" })).toEqual({
-      keywords: "Add at least one entry to keywords and phrases",
+      keywords: "Add at least one entry",
       minBudgetUsd: "Enter 0 or more",
     });
     expect(validateFields([budget], { minBudgetUsd: "12.5" })).toEqual({
       minBudgetUsd: "Enter a whole number",
     });
     expect(validateFields(fields, { keywords: ["dbt"], minBudgetUsd: "0" })).toEqual({});
+  });
+
+  it("words every missing-value message without splicing in the field label", () => {
+    const required = (field: FieldDefinition): FieldDefinition => ({ ...field, required: true });
+    const all = searchTypes.flatMap((type) => type.fields.map(required));
+    const messages = Object.values(validateFields(all, {}));
+    expect(new Set(messages)).toEqual(
+      new Set(["Add at least one entry", "Choose at least one option", "Fill this in", "Enter a number"]),
+    );
+    for (const type of searchTypes) {
+      expect(validateFields(type.fields, {})).toEqual(
+        Object.fromEntries(
+          type.fields.filter((field) => field.required).map((field) => [field.key, "Add at least one entry"]),
+        ),
+      );
+    }
   });
 });
 

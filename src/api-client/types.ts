@@ -1,4 +1,4 @@
-import type { Tier } from "@/modules/classifier/classify-lead";
+import type { Tier } from "@/lib/tiers";
 import type { SearchConfig as StoredSearchConfig } from "@/modules/configs/config-service";
 import type { Lead as StoredLead } from "@/modules/leads/lead-repository";
 import type { LeadStatus } from "@/modules/leads/lead-status";

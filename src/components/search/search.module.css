@@ -1,3 +1,7 @@
+.goneNotice {
+  margin-bottom: 24px;
+}
+
 .layout {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
@@ -39,6 +43,14 @@
   color: var(--muted);
 }
 
+@media (pointer: coarse) {
+  .configSummary a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
 .history {
   display: grid;
   gap: 10px;
@@ -78,6 +90,15 @@
 .runItem[aria-current="true"] {
   background: var(--surface);
   border-color: var(--line-strong);
+}
+
+.showOlder {
+  justify-self: start;
+}
+
+.olderCount {
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .runWhen {
@@ -172,7 +193,7 @@
   height: 100%;
   background: var(--accent);
   transform-origin: left;
-  transition: transform 400ms var(--ease);
+  transition: transform var(--slow) var(--ease);
 }
 
 .stages {

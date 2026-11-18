@@ -4,6 +4,7 @@ import type { FieldErrors } from "@/components/dynamic-form/form-values";
 
 export const NAME_MAX = 120;
 export const DESCRIPTION_MAX = 4000;
+export const ENVELOPE_KEYS = ["name", "description", "type"] as const;
 
 export function validateEnvelope(name: string, description: string): FieldErrors {
   const errors: Record<string, string> = {};
@@ -22,7 +23,7 @@ export interface IssueMapping {
 }
 
 export function mapIssues(issues: readonly FieldIssue[], fields: readonly FieldDefinition[]): IssueMapping {
-  const known = new Set(["name", "description", "type", ...fields.map((field) => field.key)]);
+  const known = new Set<string>([...ENVELOPE_KEYS, ...fields.map((field) => field.key)]);
   const fieldErrors: Record<string, string> = {};
   const unplaced: string[] = [];
   for (const { path, message } of issues) {
@@ -36,4 +37,8 @@ export function mapIssues(issues: readonly FieldIssue[], fields: readonly FieldD
 
 export function firstInvalidKey(errors: FieldErrors, order: readonly string[]): string | undefined {
   return order.find((key) => errors[key] !== undefined);
+}
+
+export function keepErrors(errors: FieldErrors, keys: readonly string[]): FieldErrors {
+  return Object.fromEntries(Object.entries(errors).filter(([key, message]) => message && keys.includes(key)));
 }

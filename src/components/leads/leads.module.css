@@ -214,7 +214,7 @@
 
 .verdictOutOf {
   font-size: var(--text-sm);
-  opacity: 0.7;
+  color: var(--muted);
 }
 
 .verdictMeaning {
@@ -288,6 +288,13 @@
   overflow-wrap: anywhere;
 }
 
+.unsafeUrl {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
 .post {
   padding-top: 16px;
   border-top: 1px solid var(--line);
@@ -328,5 +335,11 @@
 
   .segment {
     padding: 0 9px;
+  }
+}
+
+@media (pointer: coarse) {
+  .segment {
+    min-height: 44px;
   }
 }

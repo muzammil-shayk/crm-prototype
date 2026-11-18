@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "@/api-client/api";
 import { useResource } from "@/api-client/use-resource";
 import { LeadDetail } from "@/components/leads/LeadDetail";
-import { ErrorState, LoadingRows } from "@/components/ui/states";
+import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
 import { RunHistory } from "./RunHistory";
 import { RunPanel } from "./RunPanel";
 import { SearchControls } from "./SearchControls";
@@ -26,10 +26,21 @@ export function LiveSearch({ initialConfigId, initialRunId }: LiveSearchProps) {
   const polling = useRunPolling(runId);
 
   const configList = configs.resource.status === "ready" ? configs.resource.data : [];
-  const wanted = chosenConfigId ?? polling.snapshot?.run.configId;
-  const configId = (configList.find((config) => config.id === wanted) ?? configList[0])?.id ?? null;
+  const find = (id: string | null | undefined) => configList.find((config) => config.id === id);
+  const config = find(chosenConfigId) ?? find(polling.snapshot?.run.configId) ?? configList[0];
+  const configId = config?.id ?? null;
+  const linkedConfigGone =
+    configs.resource.status === "ready" &&
+    chosenConfigId !== null &&
+    chosenConfigId === initialConfigId &&
+    !find(chosenConfigId);
   const typeList = types.resource.status === "ready" ? types.resource.data : [];
   const openLead = polling.snapshot?.leads.find((lead) => lead.id === openLeadId) ?? null;
+
+  useEffect(() => {
+    if (linkedConfigGone)
+      window.history.replaceState(null, "", configId ? searchUrl(configId, runId ?? undefined) : "/search");
+  }, [linkedConfigGone, configId, runId]);
 
   const show = (nextConfigId: string, nextRunId: string | null) => {
     setChosenConfigId(nextConfigId);
@@ -50,6 +61,17 @@ export function LiveSearch({ initialConfigId, initialRunId }: LiveSearchProps) {
       {configs.resource.status === "loading" ? <LoadingRows rows={2} label="Loading search configs" /> : null}
       {configs.resource.status === "error" ? (
         <ErrorState error={configs.resource.error} onRetry={configs.reload} />
+      ) : null}
+      {linkedConfigGone ? (
+        <div className={styles.goneNotice}>
+          <Notice tone="warning" title="That config no longer exists" live>
+            <p>
+              {config
+                ? `It may have been deleted. Showing ${config.name} instead.`
+                : "It may have been deleted."}
+            </p>
+          </Notice>
+        </div>
       ) : null}
       {configs.resource.status === "ready" ? (
         <div className={styles.layout}>

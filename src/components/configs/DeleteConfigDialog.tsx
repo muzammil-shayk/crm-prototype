@@ -24,6 +24,7 @@ export function DeleteConfigDialog({ config, onClose, onDeleted }: DeleteConfigD
   };
 
   const confirm = async (target: SearchConfig) => {
+    if (deleting) return;
     setDeleting(true);
     setError(null);
     try {
@@ -51,7 +52,7 @@ export function DeleteConfigDialog({ config, onClose, onDeleted }: DeleteConfigD
             <button
               type="button"
               className="button button-danger"
-              disabled={deleting}
+              aria-disabled={deleting || undefined}
               onClick={() => void confirm(config)}
             >
               {deleting ? "Deleting…" : "Delete config"}

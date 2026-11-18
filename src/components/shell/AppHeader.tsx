@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import styles from "./shell.module.css";
 
 const LINKS = [
@@ -15,6 +16,15 @@ const LINKS = [
 
 export function AppHeader() {
   const pathname = usePathname();
+  const previousPath = useRef(pathname);
+
+  useEffect(() => {
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (lost) document.getElementById("main")?.focus();
+  }, [pathname]);
+
   return (
     <header className={styles.header}>
       <div className={styles.bar}>

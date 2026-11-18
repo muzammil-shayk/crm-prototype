@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/api-client/api";
 import type { SearchRun } from "@/api-client/types";
 import { useResource } from "@/api-client/use-resource";
@@ -22,12 +22,33 @@ export function mergeRun(runs: readonly SearchRun[], current: SearchRun | null):
   return known ? runs.map((run) => (run.id === current.id ? current : run)) : [current, ...runs];
 }
 
+export const RUNS_PER_PAGE = 10;
+
+export function shownRunCount(total: number, limit: number, selectedIndex: number): number {
+  return Math.min(total, Math.max(limit, selectedIndex + 1));
+}
+
 export function RunHistory({ configId, currentRun, selectedRunId, onSelect }: RunHistoryProps) {
   const load = useCallback(() => api.searches.list(configId), [configId]);
   const { resource, reload } = useResource(load);
 
   const belongsHere = currentRun?.configId === configId ? currentRun : null;
   const runs = resource.status === "ready" ? mergeRun(resource.data, belongsHere) : [];
+  const [limit, setLimit] = useState(RUNS_PER_PAGE);
+  const shown = shownRunCount(
+    runs.length,
+    limit,
+    runs.findIndex((run) => run.id === selectedRunId),
+  );
+  const listRef = useRef<HTMLUListElement>(null);
+  const firstRevealed = useRef<number | null>(null);
+
+  useEffect(() => {
+    const index = firstRevealed.current;
+    if (index === null) return;
+    firstRevealed.current = null;
+    listRef.current?.children[index]?.querySelector("button")?.focus();
+  }, [shown]);
 
   return (
     <section className={styles.history} aria-labelledby="history-heading">
@@ -40,8 +61,8 @@ export function RunHistory({ configId, currentRun, selectedRunId, onSelect }: Ru
         <p className={styles.historyEmpty}>This config has not been run yet.</p>
       ) : null}
       {runs.length > 0 ? (
-        <ul className={styles.runList}>
-          {runs.map((run) => (
+        <ul ref={listRef} className={styles.runList}>
+          {runs.slice(0, shown).map((run) => (
             <li key={run.id}>
               <button
                 type="button"
@@ -64,6 +85,19 @@ export function RunHistory({ configId, currentRun, selectedRunId, onSelect }: Ru
             </li>
           ))}
         </ul>
+      ) : null}
+      {shown < runs.length ? (
+        <button
+          type="button"
+          className={`button button-quiet ${styles.showOlder}`}
+          onClick={() => {
+            firstRevealed.current = shown;
+            setLimit(shown + RUNS_PER_PAGE);
+          }}
+        >
+          Show older runs
+          <span className={styles.olderCount}>{runs.length - shown}</span>
+        </button>
       ) : null}
     </section>
   );

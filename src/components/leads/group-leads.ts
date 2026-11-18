@@ -1,5 +1,5 @@
 import type { Lead, LeadStatus, Tier } from "@/api-client/types";
-import { TIERS } from "@/modules/classifier/classify-lead";
+import { TIERS } from "@/lib/tiers";
 
 export interface LeadFilter {
   tier: Tier | "all";

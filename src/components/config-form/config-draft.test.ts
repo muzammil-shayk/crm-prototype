@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { FieldDefinition } from "@/api-client/types";
-import { firstInvalidKey, mapIssues, validateEnvelope } from "./config-draft";
+import { firstInvalidKey, keepErrors, mapIssues, validateEnvelope } from "./config-draft";
 
 const keywords: FieldDefinition = {
   key: "keywords",
@@ -32,5 +32,16 @@ describe("mapIssues", () => {
   it("validates the name and description like the server", () => {
     expect(validateEnvelope("  ", "")).toEqual({ name: "Give the search a name" });
     expect(validateEnvelope("Ok", "x".repeat(4001))).toHaveProperty("description");
+  });
+});
+
+describe("keepErrors", () => {
+  it("drops errors for fields the new search type does not have, and cleared ones", () => {
+    const errors = {
+      name: "Give the search a name",
+      servicesToMatch: "Add at least one entry",
+      rules: undefined,
+    };
+    expect(keepErrors(errors, ["name", "keywords", "rules"])).toEqual({ name: "Give the search a name" });
   });
 });

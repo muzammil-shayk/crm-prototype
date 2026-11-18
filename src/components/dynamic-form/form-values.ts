@@ -47,7 +47,7 @@ export function toCriteria(fields: readonly FieldDefinition[], values: FormValue
 function fieldProblem(field: FieldDefinition, values: FormValues): string | undefined {
   if (field.kind === "number") {
     const text = readText(field, values).trim();
-    if (text === "") return field.required ? `Enter ${field.label.toLowerCase()}` : undefined;
+    if (text === "") return field.required ? "Enter a number" : undefined;
     const number = Number(text);
     if (!Number.isInteger(number)) return "Enter a whole number";
     return number < field.min ? `Enter ${field.min} or more` : undefined;
@@ -57,8 +57,14 @@ function fieldProblem(field: FieldDefinition, values: FormValues): string | unde
     ? readList(field, values).some((item) => item.trim() !== "")
     : readText(field, values).trim() !== "";
   if (filled) return undefined;
-  return field.kind === "tags" ? `Add at least one entry to ${field.label.toLowerCase()}` : "Fill this in";
+  return MISSING[field.kind];
 }
+
+const MISSING: Record<Exclude<FieldDefinition["kind"], "number">, string> = {
+  tags: "Add at least one entry",
+  multiselect: "Choose at least one option",
+  textarea: "Fill this in",
+};
 
 export function validateFields(fields: readonly FieldDefinition[], values: FormValues): FieldErrors {
   const errors: Record<string, string> = {};
