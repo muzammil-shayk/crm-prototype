@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { api, type RunSnapshot } from "@/api-client/api";
 import type { SearchConfigSummary, SearchRun, SearchType } from "@/api-client/types";
 import { useResource } from "@/api-client/use-resource";
@@ -14,6 +14,7 @@ import { searchUrl, selectSearch, withLiveRun } from "./select-search";
 import { useStartSearch } from "./start-search";
 import styles from "./search.module.css";
 import { useRunPolling } from "./use-run-polling";
+import { useSearchUrl } from "./use-search-url";
 
 interface LiveSearchProps {
   initialConfigId: string | null;
@@ -26,7 +27,7 @@ interface LiveSearchProps {
 
 export function LiveSearch(props: LiveSearchProps) {
   const configs = useResource(api.configs.list, props.initialConfigs);
-  const types = useResource(api.searchTypes, props.initialTypes);
+  const types = useResource(api.searchTypes, props.initialTypes, { revalidate: false });
   const [wanted, setWanted] = useState({ configId: props.initialConfigId, runId: props.initialRunId });
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
 
@@ -51,12 +52,7 @@ export function LiveSearch(props: LiveSearchProps) {
     props.initialRuns?.configId === configId ? props.initialRuns.runs : undefined,
   );
 
-  const url = configId ? searchUrl(configId, runId) : "/search";
-  useEffect(() => {
-    if (ready && window.location.pathname + window.location.search !== url) {
-      window.history.replaceState(null, "", url);
-    }
-  }, [ready, url]);
+  const pushUrl = useSearchUrl(ready, configId ? searchUrl(configId, runId) : "/search", setWanted);
 
   const show = (nextConfigId: string, nextRunId: string | null) => {
     setWanted({ configId: nextConfigId, runId: nextRunId });
@@ -99,6 +95,7 @@ export function LiveSearch(props: LiveSearchProps) {
               error={starter.error}
               onSelectConfig={(id) => {
                 starter.clearError();
+                if (id !== configId) pushUrl();
                 show(id, null);
               }}
               onStart={(id) => void starter.start(id)}

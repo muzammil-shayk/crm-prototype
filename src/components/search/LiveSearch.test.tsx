@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Lead, SearchConfigSummary, SearchRun } from "@/api-client/types";
 import { stubFetch } from "../../../test/ui/fake-api";
@@ -213,5 +213,39 @@ describe("LiveSearch opening a config", () => {
     expect(screen.getByText("What a search does")).toBeTruthy();
     expect(api.calls.some((call) => call.path.startsWith("/api/searches/"))).toBe(false);
     expect(window.location.search).toBe(`?config=${config.id}`);
+  });
+
+  it("adds a history entry when you pick a config, and Back brings the previous pick back", async () => {
+    const other: SearchConfigSummary = {
+      ...config,
+      id: "cfg-physio",
+      name: "Physio chains adding online booking",
+    };
+    window.history.replaceState(null, "", `/search?config=${config.id}`);
+    serve([], undefined, [config, other]);
+    render(<LiveSearch initialConfigId={config.id} initialRunId={null} />);
+    await settle();
+    const before = window.history.length;
+
+    fireEvent.change(screen.getByLabelText("Config"), { target: { value: other.id } });
+    await settle();
+    expect(window.location.search).toBe(`?config=${other.id}`);
+    expect(window.history.length).toBe(before + 1);
+
+    window.history.replaceState(null, "", `/search?config=${config.id}`);
+    await act(async () => {
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(screen.getByLabelText<HTMLSelectElement>("Config").value).toBe(config.id);
+    expect(window.location.search).toBe(`?config=${config.id}`);
+  });
+
+  it("uses the search types the server sent instead of fetching them again", async () => {
+    window.history.replaceState(null, "", `/search?config=${config.id}`);
+    const api = serve([]);
+    render(<LiveSearch initialConfigId={config.id} initialRunId={null} initialTypes={[]} />);
+    await settle();
+    expect(api.count("GET", "/api/search-types")).toBe(0);
   });
 });

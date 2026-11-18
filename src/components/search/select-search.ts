@@ -13,7 +13,7 @@ export function withLiveRun(
   });
 }
 
-interface Wanted {
+export interface Wanted {
   configId: string | null;
   runId: string | null;
 }

@@ -7,7 +7,7 @@ import { ExternalIcon } from "@/components/ui/icons";
 import { Notice } from "@/components/ui/states";
 import { highlight } from "./highlight";
 import { LeadFacts } from "./LeadFacts";
-import { noQuoteVerdict } from "./LeadRow";
+import { noQuoteVerdict } from "./no-quote";
 import { LeadStatusControl } from "./LeadStatusControl";
 import { webUrl } from "./safe-url";
 import styles from "./leads.module.css";

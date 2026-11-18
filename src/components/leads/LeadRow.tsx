@@ -1,34 +1,12 @@
-import type { Lead, Tier } from "@/api-client/types";
-import { LEAD_STATUS_LABEL, TIER_LABEL } from "@/components/search/run-labels";
+import type { Lead } from "@/api-client/types";
+import { LEAD_STATUS_LABEL } from "@/components/search/run-labels";
 import { RelativeTime } from "@/components/ui/RelativeTime";
-import { TIER_THRESHOLDS } from "@/lib/tiers";
 import styles from "./leads.module.css";
-
-type Scored = Pick<Lead, "score" | "tier" | "evidence">;
-
-export const lacksQuote = (lead: Scored) =>
-  lead.tier === "weak" && lead.evidence.every((quote) => quote.trim() === "");
-
-export function tierByScore(score: number): Tier {
-  if (score >= TIER_THRESHOLDS.strong) return "strong";
-  return score >= TIER_THRESHOLDS.medium ? "medium" : "weak";
-}
-
-export function noQuoteReason(lead: Scored): string {
-  return tierByScore(lead.score) === "weak"
-    ? "No quote from the post backs the match."
-    : `Scored ${lead.score} but kept Weak: no quote from the post backs the match.`;
-}
-
-export function noQuoteVerdict(lead: Scored): string | null {
-  const byScore = tierByScore(lead.score);
-  if (!lacksQuote(lead) || byScore === "weak") return null;
-  return `Scored ${lead.score}, enough for ${TIER_LABEL[byScore]}, but nothing in the post could be quoted in support, so it stays Weak.`;
-}
+import { noQuoteReason, noQuoteVerdict } from "./no-quote";
 
 export function LeadRow({ lead, onOpen }: { lead: Lead; onOpen: (leadId: string) => void }) {
-  const noQuote = lacksQuote(lead);
-  const struck = noQuote && tierByScore(lead.score) !== "weak";
+  const noQuote = noQuoteReason(lead);
+  const struck = noQuoteVerdict(lead) !== null;
   return (
     <li>
       <button
@@ -57,10 +35,10 @@ export function LeadRow({ lead, onOpen }: { lead: Lead; onOpen: (leadId: string)
             <span className={styles.leadMatch}>Match: {lead.matchedOrganization.name}</span>
           ) : null}
           {noQuote ? (
-            <span className={styles.noQuote} title={noQuoteReason(lead)}>
+            <span className={styles.noQuote} title={noQuote}>
               <span className={styles.noQuoteMark} aria-hidden="true" />
               No quote
-              <span className="visually-hidden">. {noQuoteReason(lead)}</span>
+              <span className="visually-hidden">. {noQuote}</span>
             </span>
           ) : null}
         </span>

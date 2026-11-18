@@ -2,7 +2,8 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Lead } from "@/api-client/types";
-import { LeadRow, noQuoteVerdict } from "./LeadRow";
+import { LeadRow } from "./LeadRow";
+import { noQuoteVerdict } from "./no-quote";
 
 afterEach(cleanup);
 

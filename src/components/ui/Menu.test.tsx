@@ -61,6 +61,18 @@ describe("Menu", () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it("lets Tab move on from the button instead of trapping focus", () => {
+    const { trigger } = setup();
+    key(trigger, "ArrowDown");
+    const tab = new KeyboardEvent("keydown", { key: "Tab", bubbles: true, cancelable: true });
+    act(() => {
+      screen.getAllByRole("menuitem")[0]?.dispatchEvent(tab);
+    });
+    expect(tab.defaultPrevented).toBe(false);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("runs the chosen item, closes, and keeps focus on the button", () => {
     const { trigger, remove } = setup();
     act(() => {

@@ -13,12 +13,14 @@ interface Settled<T> {
 
 const LOADING = { status: "loading" } as const;
 
-export function useResource<T>(load: () => Promise<T>, initial?: T) {
+export function useResource<T>(load: () => Promise<T>, initial?: T, { revalidate = true } = {}) {
   const [attempt, setAttempt] = useState(0);
   const [settled, setSettled] = useState<Settled<T> | null>(() =>
     initial === undefined ? null : { load, attempt: 0, result: { status: "ready", data: initial } },
   );
+  const [seededLoad] = useState(() => (initial !== undefined && !revalidate ? load : null));
   useEffect(() => {
+    if (attempt === 0 && load === seededLoad) return;
     let live = true;
     load().then(
       (data) => {
@@ -36,7 +38,7 @@ export function useResource<T>(load: () => Promise<T>, initial?: T) {
     return () => {
       live = false;
     };
-  }, [load, attempt]);
+  }, [load, attempt, seededLoad]);
 
   const reload = useCallback(() => {
     setAttempt((count) => count + 1);

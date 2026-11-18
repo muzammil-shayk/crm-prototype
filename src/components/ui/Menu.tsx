@@ -62,10 +62,10 @@ export function Menu({ label, items, disabled = false }: MenuProps) {
     else if (event.key === "ArrowUp") move(at - 1);
     else if (event.key === "Home") move(0);
     else if (event.key === "End") move(-1);
-    else if (event.key === "Escape" || event.key === "Tab") {
+    else if (event.key === "Escape") {
       event.preventDefault();
       close(true);
-    }
+    } else if (event.key === "Tab") close(true);
   };
 
   return (

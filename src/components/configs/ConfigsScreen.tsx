@@ -25,7 +25,7 @@ interface ConfigsScreenProps {
 export function ConfigsScreen({ initialConfigs, initialTypes }: ConfigsScreenProps) {
   const router = useRouter();
   const configs = useResource(api.configs.list, initialConfigs);
-  const types = useResource(api.searchTypes, initialTypes);
+  const types = useResource(api.searchTypes, initialTypes, { revalidate: false });
   const [filter, setFilter] = useState<ConfigFilter>(NO_FILTER);
   const [deleting, setDeleting] = useState<SearchConfig | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);

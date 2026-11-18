@@ -28,12 +28,13 @@ function summary(run: SearchRun, leadCount: number) {
   }
 }
 
-type StatRow = [keyof RunStats, string, "always" | "when-any"];
+type StatRow = [keyof RunStats, string, "always" | "when-any" | "combined"];
 
 const STAT_ROWS: StatRow[] = [
   ["retrieved", "Posts fetched", "always"],
   ["duplicates", "Duplicates removed", "always"],
   ["excluded", "Excluded by keyword", "always"],
+  ["outsideFilters", "Outside your filters", "combined"],
   ["outsideLocation", "Outside your locations", "when-any"],
   ["outsideIndustry", "Outside your industries", "when-any"],
   ["evaluated", "Leads scored", "always"],
@@ -41,15 +42,24 @@ const STAT_ROWS: StatRow[] = [
   ["costUnits", "Provider calls", "always"],
 ];
 
-const FILTERS: [keyof RunStats, string][] = [
-  ["excluded", "Your excluded keywords"],
+type Filter = [keyof RunStats, string];
+
+const BY_KEYWORD: Filter = ["excluded", "Your excluded keywords"];
+
+const FILTERS: Filter[] = [
+  BY_KEYWORD,
   ["outsideLocation", "Your location filter"],
   ["outsideIndustry", "Your industry filter"],
 ];
 
+const COMBINED_FILTERS: Filter[] = [BY_KEYWORD, ["outsideFilters", "Your location and industry filters"]];
+
+const onlyCombinedCount = (stats: RunStats) =>
+  stats.outsideFilters > stats.outsideLocation + stats.outsideIndustry;
+
 export function biggestFilter(stats: RunStats): { name: string; removed: number } | null {
   let biggest: { name: string; removed: number } | null = null;
-  for (const [key, name] of FILTERS) {
+  for (const [key, name] of onlyCombinedCount(stats) ? COMBINED_FILTERS : FILTERS) {
     if (stats[key] > (biggest?.removed ?? 0)) biggest = { name, removed: stats[key] };
   }
   return biggest;
@@ -64,7 +74,10 @@ export function noMatchAdvice(stats: RunStats): string {
 }
 
 export function RunStatsList({ stats }: { stats: RunStats }) {
-  const shown = STAT_ROWS.filter(([key, , rule]) => rule === "always" || stats[key] > 0);
+  const combined = onlyCombinedCount(stats);
+  const shown = STAT_ROWS.filter(
+    ([key, , rule]) => rule === "always" || (rule === "combined" ? combined : !combined && stats[key] > 0),
+  );
   return (
     <dl className={styles.stats}>
       {shown.map(([key, label]) => (

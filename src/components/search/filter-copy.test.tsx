@@ -109,9 +109,23 @@ describe("RunStatsList", () => {
     expect(screen.getByText("Outside your locations").nextElementSibling?.textContent).toBe("4");
     expect(screen.queryByText("Outside your industries")).toBeNull();
   });
+
+  it("shows one combined row for older runs that only counted filtered posts together", () => {
+    render(<RunStatsList stats={{ ...stats, outsideFilters: 5 }} />);
+    expect(screen.getByText("Outside your filters").nextElementSibling?.textContent).toBe("5");
+    expect(screen.queryByText("Outside your locations")).toBeNull();
+    expect(screen.queryByText("Outside your industries")).toBeNull();
+  });
 });
 
 describe("no-match advice", () => {
+  it("blames the combined filters on older runs that did not split them", () => {
+    expect(biggestFilter({ ...stats, excluded: 2, outsideFilters: 7 })).toEqual({
+      name: "Your location and industry filters",
+      removed: 7,
+    });
+  });
+
   it("names the filter that removed the most posts", () => {
     const filtered = { ...stats, excluded: 2, outsideFilters: 9, outsideLocation: 3, outsideIndustry: 6 };
     expect(biggestFilter(filtered)).toEqual({ name: "Your industry filter", removed: 6 });
