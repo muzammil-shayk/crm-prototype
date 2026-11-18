@@ -20,11 +20,17 @@ export interface RunLimits {
   maxCostUnits: number;
 }
 
+export interface ScoreSignal {
+  points: number;
+  reason: string;
+}
+
 export interface Evaluation {
   score: number;
   evidence: string[];
   explanation: string;
   matchedOrganizationId: string | null;
+  signals: ScoreSignal[] | null;
 }
 
 export interface EvaluatedLead extends RetrievedLead, Evaluation {

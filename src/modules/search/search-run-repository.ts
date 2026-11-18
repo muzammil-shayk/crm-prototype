@@ -98,8 +98,11 @@ export const searchRunRepository = {
     return (await db.searchRun.count({ where: { configId, status: "running" } })) > 0;
   },
 
-  async recordProgress(id: string, { stage, progress }: RunProgress): Promise<void> {
-    await db.searchRun.updateMany({ where: stillRunning(id), data: { stage, progress } });
+  async recordProgress(id: string, { stage, progress, stats }: RunProgress): Promise<void> {
+    await db.searchRun.updateMany({
+      where: stillRunning(id),
+      data: { stage, progress, stats: JSON.stringify(stats) },
+    });
   },
 
   async finish(id: string, outcome: SearchOutcome): Promise<void> {

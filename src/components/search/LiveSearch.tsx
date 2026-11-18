@@ -4,7 +4,6 @@ import { useCallback, useState } from "react";
 import { api, type RunSnapshot } from "@/api-client/api";
 import type { SearchConfigSummary, SearchRun, SearchType } from "@/api-client/types";
 import { useResource } from "@/api-client/use-resource";
-import { LeadDetail } from "@/components/leads/LeadDetail";
 import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
 import { ConfigBrief } from "./ConfigBrief";
 import { RunHistory } from "./RunHistory";
@@ -40,7 +39,6 @@ export function LiveSearch(props: LiveSearchProps) {
   const config = configList.find((item) => item.id === chosen?.id) ?? null;
   const configId = config?.id ?? null;
   const typeList = types.resource.status === "ready" ? types.resource.data : [];
-  const openLead = polling.snapshot?.leads.find((lead) => lead.id === openLeadId) ?? null;
   const running = liveRun?.status === "running" && liveRun.configId === configId;
 
   const loadRuns = useCallback(
@@ -65,7 +63,10 @@ export function LiveSearch(props: LiveSearchProps) {
       <div className="page-head">
         <div>
           <h1 className="page-title">Live search</h1>
-          <p className="page-lede">Run a saved config, watch it work, then triage the leads it finds.</p>
+          <p className="page-lede">
+            Pick a saved config and run it. Every post is fetched, filtered and scored, then sorted into
+            Strong, Medium and Weak with the quote that earned its grade.
+          </p>
         </div>
       </div>
 
@@ -119,8 +120,10 @@ export function LiveSearch(props: LiveSearchProps) {
                 snapshot={polling.snapshot}
                 pollError={polling.error}
                 types={typeList}
+                openLeadId={openLeadId}
                 onRunChange={polling.applyRun}
                 onOpenLead={setOpenLeadId}
+                onLeadChange={polling.applyLead}
               />
             ) : config ? (
               <ConfigBrief
@@ -134,16 +137,6 @@ export function LiveSearch(props: LiveSearchProps) {
           </section>
         </div>
       ) : null}
-
-      <LeadDetail
-        lead={openLead}
-        configType={liveRun?.configType ?? ""}
-        types={typeList}
-        onClose={() => {
-          setOpenLeadId(null);
-        }}
-        onLeadChange={polling.applyLead}
-      />
     </div>
   );
 }

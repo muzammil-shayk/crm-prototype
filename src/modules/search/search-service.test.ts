@@ -43,6 +43,22 @@ describe("search service", () => {
     expect(leads[0]?.evidence).toHaveLength(1);
   });
 
+  it("stores the score breakdown of each lead with the run", async () => {
+    const config = await createConfig(buyersInput);
+
+    const { leads } = await settled((await startSearch(config.id, dependencies())).id);
+
+    expect(leads[0]).toMatchObject({
+      company: "Harbourside Dental Group",
+      score: 50,
+      signals: [
+        { points: 20, reason: 'Mentions "patient portal".' },
+        { points: 15, reason: "Healthcare is a target industry." },
+        { points: 15, reason: "Bristol, United Kingdom matches the target locations." },
+      ],
+    });
+  });
+
   it.each([
     ["locations", { locations: ["United States"] }],
     ["industries", { industries: ["fintech"] }],
@@ -147,6 +163,21 @@ describe("search service", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(await getSearchRun(run.id)).toMatchObject({ run: { status: "cancelled" }, leads: [] });
+  });
+
+  it("shows the stats known so far while the run is still evaluating", async () => {
+    const config = await createConfig(buyersInput);
+    const llm = heldLlm(1);
+    const run = await startSearch(config.id, { ...dependencies(), llm });
+    await llm.reached;
+
+    await vi.waitFor(async () => {
+      const { run: live } = await getSearchRun(run.id);
+      expect(live).toMatchObject({ status: "running", stage: "evaluating" });
+      expect(live.stats).toMatchObject({ queries: 1, evaluated: 1, outsideFilters: 1, costUnits: 2 });
+    });
+    llm.release();
+    expect((await settled(run.id)).run.stats).toMatchObject({ evaluated: 2, costUnits: 3 });
   });
 
   it("keeps the leads evaluated before a cancel and adds none after it", async () => {

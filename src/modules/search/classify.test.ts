@@ -10,6 +10,7 @@ function evaluated(url: string, score: number, evidence: string[]): EvaluatedLea
     evidence,
     explanation: "",
     matchedOrganizationId: null,
+    signals: null,
     evaluationError: null,
   };
 }

@@ -26,9 +26,9 @@
 
 .wordLead {
   position: relative;
-  font-size: 1.0625rem;
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.035em;
 }
 
 .wordLead::after {
@@ -36,7 +36,7 @@
   right: 0;
   bottom: -3px;
   left: 0;
-  height: 3px;
+  height: 4px;
   content: "";
   background: linear-gradient(
     90deg,

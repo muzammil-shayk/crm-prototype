@@ -22,7 +22,7 @@ async function judgeLead(
 ): Promise<LeadVerdict> {
   const organizationIds = new Set(organizations.map((organization) => organization.id));
   const leadDigest = stableHash({ url: lead.url, title: lead.title, body: lead.body });
-  const key = `evaluation:${context.llm.id}:${context.configHash}:${stableHash(organizations)}:${leadDigest}`;
+  const key = `evaluation-v2:${context.llm.id}:${context.configHash}:${stableHash(organizations)}:${leadDigest}`;
   const cached = await context.cache.get(key);
   if (cached) {
     const parsed = parseEvaluation(cached.value, lead, organizationIds);

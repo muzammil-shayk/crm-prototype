@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import type { Lead, Tier } from "@/api-client/types";
+import type { Lead, SearchType, Tier } from "@/api-client/types";
 import { TIER_LABEL, TIER_MEANING } from "@/components/search/run-labels";
 import { EmptyState } from "@/components/ui/states";
-import { groupLeads, type LeadFilter } from "./group-leads";
+import { groupLeads, leadPage, type LeadFilter } from "./group-leads";
+import { LeadDetail } from "./LeadDetail";
 import { LeadFilters } from "./LeadFilters";
 import { LeadRow } from "./LeadRow";
 import styles from "./leads.module.css";
@@ -13,12 +14,17 @@ const ALL: LeadFilter = { tier: "all", status: "all" };
 
 interface LeadResultsProps {
   leads: readonly Lead[];
-  onOpenLead: (leadId: string) => void;
+  openLeadId: string | null;
+  configType: string;
+  types: readonly SearchType[];
+  onOpenLead: (leadId: string | null) => void;
+  onLeadChange: (lead: Lead) => void;
 }
 
-export function LeadResults({ leads, onOpenLead }: LeadResultsProps) {
+export function LeadResults({ leads, openLeadId, onOpenLead, ...detail }: LeadResultsProps) {
   const [filter, setFilter] = useState<LeadFilter>(ALL);
   const { groups, tierCounts, total } = groupLeads(leads, filter);
+  const openLead = leads.find((lead) => lead.id === openLeadId) ?? null;
 
   return (
     <section className={styles.results} aria-labelledby="results-heading">
@@ -48,6 +54,15 @@ export function LeadResults({ leads, onOpenLead }: LeadResultsProps) {
           <TierGroup key={tier} tier={tier} leads={tierLeads} onOpenLead={onOpenLead} />
         ))
       )}
+      <LeadDetail
+        {...detail}
+        lead={openLead}
+        page={openLead ? leadPage(leads, filter, openLead.id) : undefined}
+        onGo={onOpenLead}
+        onClose={() => {
+          onOpenLead(null);
+        }}
+      />
     </section>
   );
 }

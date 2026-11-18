@@ -1,8 +1,9 @@
 import type { Lead as LeadRow, Prisma } from "@prisma/client";
 import { db, nullIfMissing } from "@/lib/db";
-import { parseStringList } from "@/lib/json";
+import { parseJsonOrUndefined, parseStringList } from "@/lib/json";
 import { TIERS, type Tier } from "@/modules/classifier/classify-lead";
-import type { ClassifiedLead } from "@/modules/search/pipeline-types";
+import { scoreSignalsSchema } from "@/modules/search/parse-evaluation";
+import type { ClassifiedLead, ScoreSignal } from "@/modules/search/pipeline-types";
 import { asLeadStatus, type LeadStatus } from "./lead-status";
 
 export interface Lead {
@@ -22,6 +23,7 @@ export interface Lead {
   tier: Tier;
   explanation: string;
   evidence: string[];
+  signals?: ScoreSignal[];
   evaluationError: string | null;
   matchedOrganization: { id: string; name: string } | null;
   status: LeadStatus;
@@ -38,11 +40,15 @@ interface LeadFilter {
 const withOrganization = { matchedOrganization: { select: { id: true, name: true } } } as const;
 type LeadRowWithOrganization = LeadRow & { matchedOrganization: { id: string; name: string } | null };
 
-function toLead({ matchedOrganizationId: _id, ...row }: LeadRowWithOrganization): Lead {
+function toLead({ matchedOrganizationId: _id, signals, ...row }: LeadRowWithOrganization): Lead {
+  const breakdown = scoreSignalsSchema.safeParse(
+    signals === null ? undefined : parseJsonOrUndefined(signals),
+  );
   return {
     ...row,
     tier: TIERS.find((tier) => tier === row.tier) ?? "weak",
     evidence: parseStringList(row.evidence),
+    ...(breakdown.success && { signals: breakdown.data }),
     status: asLeadStatus(row.status),
   };
 }
@@ -64,6 +70,7 @@ export function leadRowsFor(runId: string, leads: readonly ClassifiedLead[]): Pr
     tier: lead.tier,
     explanation: lead.explanation,
     evidence: JSON.stringify(lead.evidence),
+    signals: lead.signals && JSON.stringify(lead.signals),
     evaluationError: lead.evaluationError,
     matchedOrganizationId: lead.matchedOrganizationId,
   }));

@@ -1,13 +1,17 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import type { Lead, SearchType } from "@/api-client/types";
 import { TIER_LABEL, TIER_MEANING } from "@/components/search/run-labels";
 import { Dialog } from "@/components/ui/Dialog";
 import { ExternalIcon } from "@/components/ui/icons";
 import { Notice } from "@/components/ui/states";
+import type { LeadPage } from "./group-leads";
 import { highlight } from "./highlight";
 import { LeadFacts } from "./LeadFacts";
+import { LeadPager, useLeadKeys } from "./LeadPager";
 import { noQuoteVerdict } from "./no-quote";
+import { ScoreBreakdown } from "./ScoreBreakdown";
 import { LeadStatusControl } from "./LeadStatusControl";
 import { webUrl } from "./safe-url";
 import styles from "./leads.module.css";
@@ -16,18 +20,28 @@ interface LeadDetailProps {
   lead: Lead | null;
   configType: string;
   types: readonly SearchType[];
+  page?: LeadPage;
   onClose: () => void;
+  onGo?: (leadId: string) => void;
   onLeadChange: (lead: Lead) => void;
 }
 
-export function LeadDetail({ lead, configType, types, onClose, onLeadChange }: LeadDetailProps) {
+export function LeadDetail({ lead, configType, types, page, onClose, onGo, onLeadChange }: LeadDetailProps) {
+  useLeadKeys(lead ? page : undefined, onGo);
   return (
     <Dialog
       open={lead !== null}
       onClose={onClose}
       variant="sheet"
       title={lead?.title ?? ""}
-      footer={lead ? <OriginalPost lead={lead} /> : null}
+      footer={
+        lead ? (
+          <div className={styles.detailFoot}>
+            {page && onGo ? <LeadPager page={page} onGo={onGo} /> : null}
+            <OriginalPost lead={lead} />
+          </div>
+        ) : null
+      }
     >
       {lead ? (
         <LeadDetailBody
@@ -65,9 +79,15 @@ function LeadDetailBody({
   configType,
   types,
   onLeadChange,
-}: Omit<LeadDetailProps, "onClose"> & { lead: Lead }) {
+}: Pick<LeadDetailProps, "configType" | "types" | "onLeadChange"> & { lead: Lead }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    ref.current?.parentElement?.scrollTo({ top: 0 });
+  }, []);
+
   return (
-    <div className={styles.detail}>
+    <div ref={ref} className={styles.detail}>
       <div className={styles.verdict}>
         <span
           className={`${styles.verdictScore} mono`}
@@ -91,7 +111,16 @@ function LeadDetailBody({
         <h3 id="why-heading" className={styles.detailHeading}>
           Why it scored this way
         </h3>
-        <p>{lead.explanation}</p>
+        {lead.signals && lead.signals.length > 0 ? (
+          <>
+            {lead.explanation !== lead.signals.map((signal) => signal.reason).join(" ") ? (
+              <p>{lead.explanation}</p>
+            ) : null}
+            <ScoreBreakdown signals={lead.signals} score={lead.score} />
+          </>
+        ) : (
+          <p>{lead.explanation}</p>
+        )}
         {lead.evaluationError ? (
           <Notice tone="warning" title="The evaluator's answer could not be used">
             <p>{lead.evaluationError}</p>

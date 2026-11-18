@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { useEffect, useRef } from "react";
 import type { SearchConfigSummary } from "@/api-client/types";
 import { EmptyState, Notice } from "@/components/ui/states";
 import { RunTally } from "./TierBar";
@@ -15,12 +14,6 @@ interface SearchControlsProps {
   onStart: (configId: string) => void;
 }
 
-function markOverflow(list: HTMLElement) {
-  const hidden = list.scrollHeight - list.clientHeight - list.scrollTop;
-  list.toggleAttribute("data-more-below", hidden > 1);
-  list.toggleAttribute("data-more-above", list.scrollTop > 1);
-}
-
 export function SearchControls({
   configs,
   configId,
@@ -30,43 +23,18 @@ export function SearchControls({
   onSelectConfig,
   onStart,
 }: SearchControlsProps) {
-  const listRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const list = listRef.current;
-    const option = list?.querySelector("input:checked")?.parentElement;
-    if (!list || !option) return;
-    const fade = parseFloat(getComputedStyle(list).getPropertyValue("--fade")) || 0;
-    const top = option.offsetTop - fade;
-    const bottom = option.offsetTop + option.offsetHeight + fade;
-    if (top < list.scrollTop) list.scrollTop = top;
-    else if (bottom > list.scrollTop + list.clientHeight) list.scrollTop = bottom - list.clientHeight;
-    markOverflow(list);
-  }, [configId]);
-
-  useEffect(() => {
-    const list = listRef.current;
-    if (!list || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => {
-      markOverflow(list);
-    });
-    observer.observe(list);
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
-
   if (!configId) {
     return (
       <EmptyState
-        title="No configs to run"
+        title="Nothing to run yet"
         action={
           <Link href="/configs/new" className="button button-primary">
             Create a config
           </Link>
         }
       >
-        Live search runs a saved config. Create one first.
+        Live search runs a saved config: the keywords, places and rules for one kind of lead. Save your first
+        one and it appears here, ready to run.
       </EmptyState>
     );
   }
@@ -92,13 +60,7 @@ export function SearchControls({
       </select>
       <fieldset className={styles.picker}>
         <legend className={styles.controlLabel}>Config</legend>
-        <div
-          ref={listRef}
-          className={styles.pickerList}
-          onScroll={(event) => {
-            markOverflow(event.currentTarget);
-          }}
-        >
+        <div className={styles.pickerList}>
           {configs.map((config) => (
             <label key={config.id} className={styles.pickerOption}>
               <input

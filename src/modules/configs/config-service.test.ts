@@ -82,6 +82,17 @@ describe("config service", () => {
     expect(copy.criteria).toEqual(config.criteria);
   });
 
+  it("numbers further copies instead of repeating the suffix", async () => {
+    const config = await createConfig(clinicsInput);
+    const first = await duplicateConfig(config.id);
+
+    const fromOriginal = await duplicateConfig(config.id);
+    const fromCopy = await duplicateConfig(first.id);
+
+    expect(fromOriginal.name).toBe("Clinics replacing their patient portal (copy 2)");
+    expect(fromCopy.name).toBe("Clinics replacing their patient portal (copy 3)");
+  });
+
   it("keeps past search runs, with the config's name, when the config is deleted", async () => {
     const config = await createConfig(clinicsInput);
     const run = await db.searchRun.create({

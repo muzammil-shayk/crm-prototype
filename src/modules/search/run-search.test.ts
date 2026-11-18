@@ -108,6 +108,53 @@ describe("runSearch", () => {
     );
   });
 
+  it("reports the stats known so far with every progress update", async () => {
+    const { outcome, progress } = start(dependencies());
+    await outcome;
+    const firstOf = (stage: string) => progress.find((update) => update.stage === stage)?.stats;
+    const empty = {
+      queries: 0,
+      queryFailures: 0,
+      retrieved: 0,
+      duplicates: 0,
+      excluded: 0,
+      outsideFilters: 0,
+      outsideLocation: 0,
+      outsideIndustry: 0,
+      evaluated: 0,
+      evaluationFailures: 0,
+      costUnits: 0,
+    };
+    const retrieved = { ...empty, queries: 3, retrieved: 12, costUnits: 3 };
+    const filtered = {
+      ...retrieved,
+      duplicates: 2,
+      excluded: 1,
+      outsideFilters: 3,
+      outsideLocation: 2,
+      outsideIndustry: 1,
+    };
+
+    expect(firstOf("generating_queries")).toEqual(empty);
+    expect(firstOf("retrieving")).toEqual({ ...empty, queries: 3 });
+    expect(firstOf("filtering")).toEqual(retrieved);
+    expect(firstOf("evaluating")).toEqual(filtered);
+    expect(
+      progress
+        .filter((update) => update.stage === "evaluating")
+        .map((update) => [update.stats.evaluated, update.stats.costUnits]),
+    ).toEqual([
+      [0, 3],
+      [1, 4],
+      [2, 5],
+      [3, 6],
+      [4, 7],
+      [5, 8],
+      [6, 9],
+    ]);
+    expect(firstOf("classifying")).toEqual({ ...filtered, evaluated: 6, costUnits: 9 });
+  });
+
   it("finishes as partial with a warning when one query fails", async () => {
     const search: SearchProvider = {
       id: "flaky-search",

@@ -76,16 +76,23 @@ export function ConfigBrief({ config, types, running, starting, onStart }: Confi
         </p>
       </header>
 
-      <p className={styles.briefNote}>Not run yet. The first search fetches fresh posts and scores them.</p>
+      <p className={styles.briefNote}>
+        Not run yet. The first run fetches fresh posts and scores each one; it takes a few seconds.
+      </p>
 
       <section className={styles.briefSection} aria-labelledby="brief-plan">
         <h3 id="brief-plan" className={styles.briefHeading}>
           What a search does
         </h3>
         <ol className={styles.plan}>
-          {STAGES.map((stage) => (
+          {STAGES.map((stage, index) => (
             <li key={stage.id} className={styles.planStep}>
-              <span className={styles.planLabel}>{stage.label}</span>
+              <span className={styles.planLabel}>
+                <span className={`${styles.planNumber} mono`} aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                {stage.label}
+              </span>
               <span className={styles.planText}>{plan[stage.id]}</span>
             </li>
           ))}

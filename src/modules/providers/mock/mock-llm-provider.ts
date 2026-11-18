@@ -44,6 +44,7 @@ function scoreLead({ lead, config, organizations }: EvaluationRequest) {
     evidence: sentencesOf(lead.body).filter((sentence) => terms.some((term) => mentions(sentence, term))),
     explanation: signals.map((signal) => signal.reason).join(" "),
     matchedOrganizationId,
+    signals,
   };
 }
 

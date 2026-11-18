@@ -3,7 +3,7 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { RunStats, SearchConfigSummary, SearchType } from "@/api-client/types";
 import { ConfigBrief, targetRules } from "./ConfigBrief";
-import { biggestFilter, noMatchAdvice, RunStatsList } from "./RunOutcome";
+import { biggestFilter, noMatchAdvice, RunStatsList, statRows } from "./RunOutcome";
 
 afterEach(cleanup);
 
@@ -96,7 +96,53 @@ describe("ConfigBrief", () => {
   });
 });
 
+describe("statRows", () => {
+  it("lists the run in pipeline order, from queries to scored leads, then provider calls", () => {
+    expect(statRows({ ...stats, outsideFilters: 3, outsideIndustry: 3 }).map((row) => row.key)).toEqual([
+      "queries",
+      "retrieved",
+      "duplicates",
+      "excluded",
+      "outsideIndustry",
+      "evaluated",
+      "costUnits",
+    ]);
+  });
+
+  it("carries each stage's count", () => {
+    const rows = statRows({ ...stats, retrieved: 23, duplicates: 13 });
+    expect(rows.find((row) => row.key === "retrieved")?.value).toBe(23);
+    expect(rows.find((row) => row.key === "duplicates")?.value).toBe(13);
+  });
+});
+
+describe("statRows during a run", () => {
+  it("leaves each count empty until its stage has run", () => {
+    const rows = statRows({ ...stats, queries: 4, costUnits: 2 }, "retrieving");
+    expect(rows.map(({ key, value }) => [key, value])).toEqual([
+      ["queries", 4],
+      ["retrieved", null],
+      ["duplicates", null],
+      ["excluded", null],
+      ["evaluated", null],
+      ["costUnits", 2],
+    ]);
+  });
+
+  it("knows every count once scoring starts", () => {
+    expect(statRows(stats, "evaluating").every((row) => row.value !== null)).toBe(true);
+  });
+});
+
 describe("RunStatsList", () => {
+  it("marks counts that have not arrived yet without inventing a number", () => {
+    render(<RunStatsList stats={{ ...stats, queries: 4 }} reached="retrieving" live />);
+    const fetched = screen.getByText("Posts fetched").parentElement;
+    expect(fetched?.getAttribute("data-state")).toBe("pending");
+    expect(fetched?.textContent).toBe("Posts fetched–Not counted yet");
+    expect(screen.getByText("Queries run").nextElementSibling?.textContent).toBe("4");
+  });
+
   it("hides the location and industry counts when nothing fell outside them", () => {
     render(<RunStatsList stats={stats} />);
     expect(screen.queryByText("Outside your locations")).toBeNull();

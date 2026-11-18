@@ -65,35 +65,8 @@
 }
 
 .pickerList {
-  --fade: 32px;
   display: grid;
   gap: 2px;
-  position: relative;
-  max-height: min(23rem, 50vh);
-  margin: -3px;
-  padding: 3px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
-}
-
-.pickerList[data-more-below] {
-  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--fade)), transparent);
-}
-
-.pickerList[data-more-above] {
-  mask-image: linear-gradient(to bottom, transparent, #000 var(--fade));
-}
-
-.pickerList[data-more-above][data-more-below] {
-  mask-image: linear-gradient(
-    to bottom,
-    transparent,
-    #000 var(--fade),
-    #000 calc(100% - var(--fade)),
-    transparent
-  );
 }
 
 .pickerOption {
@@ -137,13 +110,28 @@
 }
 
 .controlActions {
+  position: sticky;
+  bottom: 0;
   display: flex;
   gap: 8px;
-  padding-top: 4px;
+  margin: 0 -16px -16px;
+  padding: 12px 16px 16px;
+  background: var(--surface);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  box-shadow: 0 -1px 0 var(--line);
 }
 
 .controlActions > button {
   flex: 1 1 auto;
+}
+
+@media (max-width: 900px) {
+  .controlActions {
+    position: static;
+    margin: 0;
+    padding: 4px 0 0;
+    box-shadow: none;
+  }
 }
 
 .inlineEdit {
@@ -414,6 +402,54 @@
     0 -1px 0 var(--line);
 }
 
+.stats[data-replay] .stat,
+.stats[data-live] .stat {
+  position: relative;
+}
+
+.stats[data-replay] .stat::before,
+.stats[data-live] .stat[data-state="known"]::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: trace var(--reveal) var(--ease) calc(var(--step) * 110ms) both;
+}
+
+.stats[data-live] .stat[data-state="known"]::before {
+  animation-delay: 0ms;
+}
+
+.stat[data-state="pending"] dd {
+  color: var(--muted);
+}
+
+.stat[data-state="pending"] dt {
+  color: var(--placeholder);
+}
+
+@keyframes trace {
+  0% {
+    opacity: 1;
+    transform: scaleX(0);
+  }
+
+  60% {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scaleX(1);
+  }
+}
+
 .stat dt {
   font-size: var(--text-xs);
   color: var(--muted);
@@ -542,14 +578,23 @@
 
 .planStep {
   display: grid;
-  grid-template-columns: 170px minmax(0, 1fr);
+  grid-template-columns: 190px minmax(0, 1fr);
   gap: 4px 16px;
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
 
 .planLabel {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
   font-weight: 600;
+}
+
+.planNumber {
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--muted);
 }
 
 .planText {

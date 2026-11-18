@@ -29,6 +29,25 @@
   width: auto;
 }
 
+.listWrap {
+  display: grid;
+  gap: 16px;
+}
+
+.more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 16px;
+}
+
+.moreCount {
+  font-size: var(--text-sm);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .list {
   list-style: none;
   background: var(--surface);

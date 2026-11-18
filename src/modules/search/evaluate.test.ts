@@ -4,6 +4,7 @@ import type { LlmProvider, RetrievedLead } from "@/modules/providers/provider-ty
 import { parseSearchConfigInput } from "@/modules/search-types/registry";
 import { memoryCache, pipelineContext } from "../../../test/pipeline-context";
 import { retrievedLead } from "../../../test/retrieved-lead";
+import { stableHash } from "@/lib/stable-hash";
 import { CostBudget } from "./cost-budget";
 import { evaluate } from "./evaluate";
 
@@ -48,6 +49,25 @@ describe("evaluate", () => {
       evidence: ["We are looking for an agency to rebuild our patient portal."],
       evaluationError: null,
     });
+  });
+
+  it("asks again for a lead whose evaluation was cached before score breakdowns existed", async () => {
+    const [lead] = leads.slice(0, 1) as [RetrievedLead];
+    const leadDigest = stableHash({ url: lead.url, title: lead.title, body: lead.body });
+    const cache = memoryCache();
+    await cache.set(
+      `evaluation:mock-llm:hash-a:${stableHash([])}:${leadDigest}`,
+      JSON.stringify({ score: 35, evidence: [], explanation: "Old answer.", matchedOrganizationId: null }),
+    );
+    const llm = llmWhere(realAnswer);
+
+    const outcome = await evaluate([lead], config, [], pipelineContext({ llm, cache }));
+
+    expect(llm.calls).toBe(1);
+    expect(outcome.leads[0]?.signals).toEqual([
+      { points: 20, reason: 'Mentions "patient portal".' },
+      { points: 15, reason: "Healthcare is a target industry." },
+    ]);
   });
 
   it("keeps the other leads when the evaluator fails on one", async () => {

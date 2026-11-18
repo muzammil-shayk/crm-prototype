@@ -7,6 +7,21 @@
 
 .track[data-size="full"] {
   height: 10px;
+  animation: grow var(--reveal) var(--ease) both;
+}
+
+.track[data-size="full"] .segment {
+  transition-duration: var(--reveal);
+}
+
+@keyframes grow {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 .track[data-size="mini"] {

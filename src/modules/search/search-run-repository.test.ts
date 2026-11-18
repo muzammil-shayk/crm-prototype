@@ -15,6 +15,7 @@ const outcome: SearchOutcome = {
       evidence: ["We are looking for an agency"],
       explanation: "Strong fit.",
       matchedOrganizationId: null,
+      signals: null,
       evaluationError: null,
       tier: "strong",
     },

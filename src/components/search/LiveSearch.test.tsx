@@ -104,10 +104,14 @@ afterEach(() => {
 });
 
 describe("LiveSearch polling", () => {
-  it("polls while the run is running, shows progress, and stops once it finishes", async () => {
+  it("polls while the run is running, counts each stage as it lands, then settles without a second count", async () => {
     const api = serve([
       run({ progress: 30 }),
-      run({ stage: "evaluating", progress: 70 }),
+      run({
+        stage: "evaluating",
+        progress: 70,
+        stats: { ...run({}).stats, retrieved: 9, duplicates: 2, evaluated: 3, costUnits: 4 },
+      }),
       run({
         status: "completed",
         stage: "classifying",
@@ -119,17 +123,43 @@ describe("LiveSearch polling", () => {
     render(<LiveSearch initialConfigId={config.id} initialRunId="run-1" />);
     await settle();
 
+    const cell = (label: string) => screen.getByText(label).parentElement;
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("30");
+    expect(cell("Queries run")?.getAttribute("data-state")).toBe("known");
+    expect(cell("Posts fetched")?.getAttribute("data-state")).toBe("pending");
+    expect(cell("Posts fetched")?.textContent).toContain("Not counted yet");
+
     await settle(POLL_INTERVAL_MS);
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("70");
     expect(screen.getByText("Scoring leads…")).toBeTruthy();
+    expect(cell("Posts fetched")?.getAttribute("data-state")).toBe("known");
+    expect(cell("Leads scored")?.querySelector("dd")?.textContent).toBe("3");
 
     await settle(POLL_INTERVAL_MS);
     expect(screen.queryByRole("progressbar")).toBeNull();
     expect(screen.getByText("Search completed. 6 leads: 2 Strong, 1 Medium, 3 Weak.")).toBeTruthy();
+    expect(document.querySelector("dl[data-replay]")).toBeNull();
 
     await settle(POLL_INTERVAL_MS * 10);
     expect(api.count("GET", "/api/searches/run-1")).toBe(3);
+  });
+
+  it("replays the funnel when the run finished before any count was shown", async () => {
+    serve([
+      run({ stage: "generating_queries", progress: 0 }),
+      run({
+        status: "completed",
+        stage: "classifying",
+        progress: 100,
+        finishedAt: "2026-11-18T10:00:04.000Z",
+      }),
+    ]);
+    render(<LiveSearch initialConfigId={config.id} initialRunId="run-1" />);
+    await settle();
+    expect(screen.getByText("Provider calls").parentElement?.getAttribute("data-state")).toBe("pending");
+
+    await settle(POLL_INTERVAL_MS);
+    expect(document.querySelector("dl[data-replay]")).not.toBeNull();
   });
 
   it("cancels a running search, keeps focus on the run, and stops polling", async () => {
@@ -158,7 +188,8 @@ describe("LiveSearch polling", () => {
     await settle(POLL_INTERVAL_MS);
     expect(screen.getByText("Cancelled. Kept 1 lead that was scored before you stopped.")).toBeTruthy();
     expect(screen.getByText(keptLead.title)).toBeTruthy();
-    expect(screen.queryByText("Posts fetched")).toBeNull();
+    expect(screen.getByText("Queries run").nextElementSibling?.textContent).toBe("1");
+    expect(screen.getByText("Posts fetched").nextElementSibling?.textContent).toBe("–Not reached");
     expect(document.activeElement?.textContent).toBe(config.name);
 
     const pollsAfterCancel = api.count("GET", "/api/searches/run-1");
@@ -202,6 +233,7 @@ describe("LiveSearch opening a config", () => {
     expect(screen.getByText("Finished, but no posts matched this config.")).toBeTruthy();
     expect(screen.queryByText("What a search does")).toBeNull();
     expect(window.location.search).toBe(`?config=${config.id}&run=run-1`);
+    expect(document.querySelector("dl[data-replay]")).toBeNull();
   });
 
   it("shows what a search does only for a config that has never run", async () => {

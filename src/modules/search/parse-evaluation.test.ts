@@ -26,9 +26,52 @@ describe("parseEvaluation", () => {
         evidence: ["looking for an agency to rebuild our patient portal"],
         explanation: "Asks for an agency and states a budget.",
         matchedOrganizationId: null,
+        signals: null,
       },
       error: null,
     });
+  });
+
+  it("keeps a score breakdown whose points add up to the score", () => {
+    const signals = [
+      { points: 40, reason: 'Mentions "patient portal" and "looking for an agency".' },
+      { points: 15, reason: "Healthcare is a target industry." },
+      { points: 20, reason: "Budget of $40,000 meets the $20,000 minimum." },
+    ];
+    const parsed = parseEvaluation(evaluatorOutput({ score: 75, signals }), lead, organizations);
+
+    expect(parsed.evaluation).toMatchObject({ score: 75, signals });
+    expect(parsed.error).toBeNull();
+  });
+
+  it("keeps a breakdown whose total falls below zero when the score is held at zero", () => {
+    const signals = [
+      { points: 0, reason: "Does not mention any of the keywords." },
+      { points: -15, reason: "Budget of $5,000 is below the $20,000 minimum." },
+    ];
+    const parsed = parseEvaluation(evaluatorOutput({ score: 0, signals }), lead, organizations);
+
+    expect(parsed.evaluation.signals).toEqual(signals);
+  });
+
+  it("drops a breakdown that does not add up to the score but keeps the evaluation", () => {
+    const signals = [{ points: 40, reason: "Mentions the keywords." }];
+    const parsed = parseEvaluation(evaluatorOutput({ score: 82, signals }), lead, organizations);
+
+    expect(parsed.evaluation).toMatchObject({ score: 82, signals: null });
+    expect(parsed.error).toBeNull();
+  });
+
+  it.each([
+    ["points that are not whole numbers", [{ points: 82.5, reason: "Fits." }]],
+    ["an empty reason", [{ points: 82, reason: " " }]],
+    ["a reason too long to show", [{ points: 82, reason: "x".repeat(301) }]],
+    ["a breakdown that is not a list", { points: 82, reason: "Fits." }],
+  ])("drops a breakdown with %s but keeps the evaluation", (_case, signals) => {
+    const parsed = parseEvaluation(evaluatorOutput({ score: 82, signals }), lead, organizations);
+
+    expect(parsed.evaluation).toMatchObject({ score: 82, signals: null });
+    expect(parsed.error).toBeNull();
   });
 
   it("falls back to a zero score with a reason when the output is not JSON", () => {

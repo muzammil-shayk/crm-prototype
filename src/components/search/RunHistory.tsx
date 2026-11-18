@@ -65,7 +65,9 @@ export function RunHistory({
       {resource.status === "loading" ? <LoadingRows rows={2} label="Loading past runs" /> : null}
       {resource.status === "error" ? <ErrorState error={resource.error} onRetry={onRetry} /> : null}
       {resource.status === "ready" && runs.length === 0 ? (
-        <p className={styles.historyEmpty}>This config has not been run yet.</p>
+        <p className={styles.historyEmpty}>
+          No runs yet. Each run you start stays here with its leads, so you can come back to it.
+        </p>
       ) : null}
       {runs.length > 0 ? (
         <ul ref={listRef} className={styles.runList}>

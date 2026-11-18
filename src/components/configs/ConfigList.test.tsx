@@ -1,9 +1,9 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { SearchConfigSummary } from "@/api-client/types";
 import { NO_FILTER } from "./filter-configs";
-import { ConfigList } from "./ConfigList";
+import { ConfigList, configLinkId } from "./ConfigList";
 
 afterEach(cleanup);
 
@@ -33,11 +33,11 @@ const ran: SearchConfigSummary = {
   },
 };
 
-function list() {
+function list(configs: SearchConfigSummary[] = [base, ran]) {
   const noop = () => undefined;
   render(
     <ConfigList
-      configs={[base, ran]}
+      configs={configs}
       types={[]}
       filter={NO_FILTER}
       busyId={null}
@@ -69,5 +69,30 @@ describe("ConfigList", () => {
     expect(screen.getAllByRole("link", { name: "Edit" })).toHaveLength(2);
     expect(screen.queryByRole("button", { name: "Duplicate" })).toBeNull();
     expect(screen.getByRole("button", { name: `More actions for ${ran.name}` })).toBeTruthy();
+  });
+
+  it("shows eight configs at a time and moves focus to the first one it reveals", () => {
+    const many = Array.from({ length: 19 }, (_, index) => ({
+      ...base,
+      id: `cfg-${index}`,
+      name: `Config ${index}`,
+    }));
+    list(many);
+    const rows = () => screen.getAllByRole("button", { name: "Run search" }).length;
+    expect(rows()).toBe(8);
+    expect(screen.getByText("Showing 8 of 19")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Show 8 more" }));
+    expect(rows()).toBe(16);
+    expect(document.activeElement?.id).toBe(configLinkId("cfg-8"));
+
+    fireEvent.click(screen.getByRole("button", { name: "Show 3 more" }));
+    expect(rows()).toBe(19);
+    expect(screen.queryByRole("button", { name: /more$/ })).toBeNull();
+  });
+
+  it("has no Show more button when every config fits", () => {
+    list();
+    expect(screen.queryByRole("button", { name: /more$/ })).toBeNull();
   });
 });

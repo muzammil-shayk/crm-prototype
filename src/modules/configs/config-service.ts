@@ -8,12 +8,12 @@ import {
 } from "@/modules/search-types/registry";
 import { runSummariesByConfig, type ConfigRunSummary } from "@/modules/search/config-run-summaries";
 import { configRepository } from "./config-repository";
+import { copyName } from "./copy-name";
 
 export type SearchConfig = SearchConfigInput & { id: string; createdAt: Date; updatedAt: Date };
 export type SearchConfigSummary = SearchConfig & ConfigRunSummary;
 
 const MAX_NAME_LENGTH = 120;
-const COPY_SUFFIX = " (copy)";
 
 function readStoredConfig(row: SearchConfigRow): SearchConfig | null {
   const parsed = searchConfigInputSchema.safeParse({
@@ -69,6 +69,7 @@ export async function deleteConfig(id: string): Promise<void> {
 
 export async function duplicateConfig(id: string): Promise<SearchConfig> {
   const { id: _id, createdAt: _createdAt, updatedAt: _updatedAt, ...original } = await getConfig(id);
-  const name = original.name.slice(0, MAX_NAME_LENGTH - COPY_SUFFIX.length) + COPY_SUFFIX;
+  const taken = (await configRepository.findAll()).map((row) => row.name);
+  const name = copyName(original.name, taken, MAX_NAME_LENGTH);
   return toSearchConfig(await configRepository.insert({ ...original, name }));
 }

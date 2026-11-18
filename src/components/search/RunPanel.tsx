@@ -1,22 +1,39 @@
+import { useState } from "react";
 import type { RunSnapshot } from "@/api-client/api";
-import type { SearchRun, SearchType } from "@/api-client/types";
+import type { Lead, SearchRun, SearchType } from "@/api-client/types";
 import { LeadResults } from "@/components/leads/LeadResults";
 import { CheckIcon } from "@/components/ui/icons";
 import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
 import { STAGES } from "./run-labels";
 import { RunHeader } from "./RunHeader";
-import { RunOutcome } from "./RunOutcome";
+import { RunOutcome, RunStatsList } from "./RunOutcome";
 import styles from "./search.module.css";
 
 interface RunPanelProps {
   snapshot: RunSnapshot | null;
   pollError: unknown;
   types: readonly SearchType[];
+  openLeadId: string | null;
   onRunChange: (run: SearchRun) => void;
-  onOpenLead: (leadId: string) => void;
+  onOpenLead: (leadId: string | null) => void;
+  onLeadChange: (lead: Lead) => void;
 }
 
-export function RunPanel({ snapshot, pollError, types, onRunChange, onOpenLead }: RunPanelProps) {
+function useWatchedFinish(run: SearchRun | undefined): boolean {
+  const [watched, setWatched] = useState<{ id: string; counted: boolean } | null>(null);
+  let next = watched;
+  if (run?.status === "running") {
+    const counted = run.id === watched?.id && watched.counted;
+    next = { id: run.id, counted: counted || run.stage !== STAGES[0]?.id };
+  } else if (run?.id !== watched?.id) {
+    next = null;
+  }
+  if (next?.id !== watched?.id || next?.counted !== watched?.counted) setWatched(next);
+  return run !== undefined && run.status !== "running" && next?.id === run.id && !next.counted;
+}
+
+export function RunPanel({ snapshot, pollError, types, onRunChange, ...leadProps }: RunPanelProps) {
+  const replay = useWatchedFinish(snapshot?.run);
   if (!snapshot) {
     return pollError ? (
       <ErrorState error={pollError} subject="run" />
@@ -38,8 +55,10 @@ export function RunPanel({ snapshot, pollError, types, onRunChange, onOpenLead }
         <RunProgress run={run} />
       ) : (
         <>
-          <RunOutcome run={run} leadCount={leads.length} />
-          {leads.length > 0 ? <LeadResults leads={leads} onOpenLead={onOpenLead} /> : null}
+          <RunOutcome run={run} leadCount={leads.length} replay={replay} />
+          {leads.length > 0 ? (
+            <LeadResults leads={leads} configType={run.configType} types={types} {...leadProps} />
+          ) : null}
         </>
       )}
     </div>
@@ -83,6 +102,7 @@ function RunProgress({ run }: { run: SearchRun }) {
           );
         })}
       </ol>
+      <RunStatsList stats={run.stats} reached={run.stage} live />
       <p className={styles.progressNote}>
         Progress updates every half second. You can leave this page; the search keeps running and its results
         stay in Past runs.

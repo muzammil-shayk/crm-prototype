@@ -46,6 +46,7 @@ async function evaluate(company: string, config = buyersConfig) {
     evidence: string[];
     explanation: string;
     matchedOrganizationId: string | null;
+    signals: { points: number; reason: string }[];
   };
 }
 
@@ -59,6 +60,29 @@ describe("MockLlmProvider", () => {
       "We are looking for an agency to rebuild booking, reminders and card payments.",
     ]);
     expect(evaluation.explanation).toContain("Budget of $45,000 meets the $20,000 minimum.");
+  });
+
+  it("breaks the score down into the points each signal gave", async () => {
+    const evaluation = await evaluate("Harbourside Dental Group");
+
+    expect(evaluation.signals).toEqual([
+      { points: 40, reason: 'Mentions "patient portal" and "looking for an agency".' },
+      { points: 15, reason: "Healthcare is a target industry." },
+      { points: 15, reason: "Bristol, United Kingdom matches the target locations." },
+      { points: 20, reason: "Budget of $45,000 meets the $20,000 minimum." },
+    ]);
+  });
+
+  it.each([
+    ["buyer", buyersConfig],
+    ["job", jobsConfig],
+  ])("gives every %s posting a breakdown that adds up to its score", async (_kind, config) => {
+    for (const lead of fixturePostings) {
+      const raw = await llm.evaluateLead({ lead, config, organizations }, signal);
+      const { score, signals } = JSON.parse(raw) as { score: number; signals: { points: number }[] };
+      const total = signals.reduce((sum, item) => sum + item.points, 0);
+      expect(Math.max(0, Math.min(100, total))).toBe(score);
+    }
   });
 
   it("returns no evidence when only the title mentions the keywords", async () => {

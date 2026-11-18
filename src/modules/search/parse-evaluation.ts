@@ -1,23 +1,37 @@
 import { z } from "zod";
 import { parseJsonOrUndefined } from "@/lib/json";
 import type { RetrievedLead } from "@/modules/providers/provider-types";
-import type { Evaluation } from "./pipeline-types";
+import type { Evaluation, ScoreSignal } from "./pipeline-types";
+
+export const scoreSignalsSchema = z.array(
+  z.object({
+    points: z.number().int().min(-100).max(100),
+    reason: z.string().trim().min(1).max(300),
+  }),
+);
 
 const evaluatorOutputSchema = z.object({
   score: z.number().int().min(0).max(100),
   evidence: z.array(z.string()),
   explanation: z.string().trim().min(1),
   matchedOrganizationId: z.string().nullable(),
+  signals: scoreSignalsSchema.nullable().catch(null).default(null),
 });
 
 const fallbackExplanation = "The evaluator output could not be used, so this lead is marked Weak.";
 
 export function fallbackEvaluation(explanation: string = fallbackExplanation): Evaluation {
-  return { score: 0, evidence: [], explanation, matchedOrganizationId: null };
+  return { score: 0, evidence: [], explanation, matchedOrganizationId: null, signals: null };
 }
 
 function fallback(error: string) {
   return { evaluation: fallbackEvaluation(), error };
+}
+
+function reconciled(signals: ScoreSignal[] | null, score: number): ScoreSignal[] | null {
+  if (signals === null) return null;
+  const total = signals.reduce((sum, signal) => sum + signal.points, 0);
+  return Math.max(0, Math.min(100, total)) === score ? signals : null;
 }
 
 function normalize(text: string): string {
@@ -67,6 +81,7 @@ export function parseEvaluation(
         matchedOrganizationId !== null && organizationIds.has(matchedOrganizationId)
           ? matchedOrganizationId
           : null,
+      signals: reconciled(parsed.data.signals, parsed.data.score),
     },
     error: null,
   };

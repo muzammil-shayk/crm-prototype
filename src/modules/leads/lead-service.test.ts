@@ -15,6 +15,7 @@ function classified(overrides: Partial<ClassifiedLead>): ClassifiedLead {
     evidence: ["We are looking for an agency to rebuild our patient portal."],
     explanation: "Mentions the patient portal.",
     matchedOrganizationId: null,
+    signals: null,
     evaluationError: null,
     tier: "strong",
     ...overrides,
@@ -57,6 +58,32 @@ describe("lead service", () => {
       matchedOrganization: { id: "cm0northwind000000000000", name: "Northwind Data Studio" },
       budgetUsd: null,
     });
+  });
+
+  it("returns the score breakdown stored with a lead", async () => {
+    const signals = [
+      { points: 60, reason: 'Mentions "patient portal".' },
+      { points: 20, reason: "Budget of $45,000 meets the $20,000 minimum." },
+    ];
+    const runId = await storeRun([classified({ url: "https://a.example/1", signals })]);
+
+    const [lead] = await listLeads({ runId });
+
+    expect(lead?.signals).toEqual(signals);
+  });
+
+  it.each([
+    ["stored before breakdowns existed", null],
+    ["whose stored breakdown is unreadable", "not json"],
+    ["whose stored breakdown has the wrong shape", '[{"points":"many"}]'],
+  ])("leaves the breakdown out for a lead %s", async (_case, stored) => {
+    const runId = await storeRun([classified({ url: "https://a.example/1" })]);
+    await db.lead.updateMany({ where: { runId }, data: { signals: stored } });
+
+    const [lead] = await listLeads({ runId });
+
+    expect(lead).toBeDefined();
+    expect(lead && "signals" in lead).toBe(false);
   });
 
   it("filters by status and tier, strongest first", async () => {
