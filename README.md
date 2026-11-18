@@ -7,6 +7,7 @@ npm install
 cp .env.example .env
 npm run setup        # create the SQLite database and load seed data
 npm run dev          # http://localhost:3000
+MOCK_DELAY_MS=0 npm run dev
 ```
 
 ```bash

@@ -25,6 +25,7 @@ const outcome: SearchOutcome = {
     retrieved: 1,
     duplicates: 0,
     excluded: 0,
+    outsideFilters: 4,
     evaluated: 1,
     evaluationFailures: 0,
     costUnits: 2,
@@ -33,6 +34,85 @@ const outcome: SearchOutcome = {
   warnings: [],
   error: null,
 };
+
+function classified(url: string, tier: "strong" | "medium" | "weak") {
+  return { ...outcome.leads[0], url, tier } as SearchOutcome["leads"][number];
+}
+
+async function startedRun(id: string) {
+  const config = await createConfig({
+    type: "buyers-seeking-providers",
+    name: "Clinics",
+    criteria: { keywords: ["patient portal"] },
+  });
+  return searchRunRepository.create({
+    id,
+    configId: config.id,
+    configName: "Clinics",
+    configType: "buyers-seeking-providers",
+    configHash: "h",
+  });
+}
+
+describe("searchRunRepository tier counts", () => {
+  beforeEach(resetDatabase);
+
+  it("starts a new run with zero leads in every tier", async () => {
+    const run = await startedRun("run-new");
+    expect(run.tierCounts).toEqual({ strong: 0, medium: 0, weak: 0 });
+  });
+
+  it("counts a finished run's leads per tier", async () => {
+    const run = await startedRun("run-counted");
+    const leads = [
+      classified("https://boards.example.org/a", "strong"),
+      classified("https://boards.example.org/b", "weak"),
+      classified("https://boards.example.org/c", "weak"),
+    ];
+    await searchRunRepository.finish(run.id, { ...outcome, leads });
+
+    expect((await searchRunRepository.findById(run.id))?.tierCounts).toEqual({
+      strong: 1,
+      medium: 0,
+      weak: 2,
+    });
+  });
+
+  it("counts each listed run's leads separately", async () => {
+    const first = await startedRun("run-first");
+    await searchRunRepository.finish(first.id, {
+      ...outcome,
+      leads: [classified("https://boards.example.org/a", "medium")],
+    });
+    const second = await startedRun("run-second");
+
+    const runs = await searchRunRepository.findMany({});
+
+    expect(Object.fromEntries(runs.map((run) => [run.id, run.tierCounts]))).toEqual({
+      "run-first": { strong: 0, medium: 1, weak: 0 },
+      [second.id]: { strong: 0, medium: 0, weak: 0 },
+    });
+  });
+});
+
+describe("searchRunRepository stats", () => {
+  beforeEach(resetDatabase);
+
+  it("keeps the count of leads dropped by the location and industry filters", async () => {
+    const run = await startedRun("run-filtered");
+    await searchRunRepository.finish(run.id, outcome);
+
+    expect((await searchRunRepository.findById(run.id))?.stats.outsideFilters).toBe(4);
+  });
+
+  it("reads zero filtered leads for a run stored before the filters existed", async () => {
+    const run = await startedRun("run-older");
+    const { outsideFilters: _dropped, ...olderStats } = outcome.stats;
+    await db.searchRun.update({ where: { id: run.id }, data: { stats: JSON.stringify(olderStats) } });
+
+    expect((await searchRunRepository.findById(run.id))?.stats).toEqual({ ...olderStats, outsideFilters: 0 });
+  });
+});
 
 describe("searchRunRepository.finish", () => {
   beforeEach(resetDatabase);

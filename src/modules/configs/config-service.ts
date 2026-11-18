@@ -6,9 +6,11 @@ import {
   searchConfigInputSchema,
   type SearchConfigInput,
 } from "@/modules/search-types/registry";
+import { runSummariesByConfig, type ConfigRunSummary } from "@/modules/search/config-run-summaries";
 import { configRepository } from "./config-repository";
 
 export type SearchConfig = SearchConfigInput & { id: string; createdAt: Date; updatedAt: Date };
+export type SearchConfigSummary = SearchConfig & ConfigRunSummary;
 
 const MAX_NAME_LENGTH = 120;
 const COPY_SUFFIX = " (copy)";
@@ -42,14 +44,15 @@ export async function createConfig(input: unknown): Promise<SearchConfig> {
   return toSearchConfig(await configRepository.insert(parseSearchConfigInput(input)));
 }
 
-export async function listConfigs(): Promise<SearchConfig[]> {
+export async function listConfigs(): Promise<SearchConfigSummary[]> {
   const configs: SearchConfig[] = [];
   for (const row of await configRepository.findAll()) {
     const config = readStoredConfig(row);
     if (config) configs.push(config);
     else console.error(unreadable(row.id));
   }
-  return configs;
+  const summaries = await runSummariesByConfig(configs.map((config) => config.id));
+  return configs.map((config) => ({ ...config, lastRun: null, runCount: 0, ...summaries.get(config.id) }));
 }
 
 export async function getConfig(id: string): Promise<SearchConfig> {

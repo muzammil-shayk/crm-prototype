@@ -5,9 +5,13 @@ import { parseJsonOrUndefined, parseStringList } from "@/lib/json";
 import { leadRowsFor } from "@/modules/leads/lead-repository";
 import { RUN_STAGES, type LimitHit, type RunStage, type RunStats } from "./pipeline-types";
 import type { RunProgress, SearchOutcome } from "./run-search";
+import { noLeads, tierCountsByRun, type TierCounts } from "./run-tier-counts";
 
 const RUN_STATUSES = ["running", "completed", "partial", "failed", "cancelled"] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
+
+export const asRunStatus = (status: string): RunStatus =>
+  RUN_STATUSES.find((known) => known === status) ?? "failed";
 
 export interface SearchRun {
   id: string;
@@ -23,6 +27,7 @@ export interface SearchRun {
   error: string | null;
   startedAt: Date;
   finishedAt: Date | null;
+  tierCounts: TierCounts;
 }
 
 const count = z.number().int().nonnegative().catch(0);
@@ -32,16 +37,18 @@ const statsSchema = z.object({
   retrieved: count,
   duplicates: count,
   excluded: count,
+  outsideFilters: count,
   evaluated: count,
   evaluationFailures: count,
   costUnits: count,
 });
 const limitsSchema = z.array(z.enum(["max_queries", "max_leads", "max_cost_units"])).catch([]);
 
-function toSearchRun({ configHash: _hash, ...row }: SearchRunRow): SearchRun {
+function toSearchRun({ configHash: _hash, ...row }: SearchRunRow, tierCounts: TierCounts): SearchRun {
   return {
     ...row,
-    status: RUN_STATUSES.find((status) => status === row.status) ?? "failed",
+    tierCounts,
+    status: asRunStatus(row.status),
     stage: RUN_STAGES.find((stage) => stage === row.stage) ?? "generating_queries",
     stats: statsSchema.parse(parseJsonOrUndefined(row.stats) ?? {}),
     limitsHit: limitsSchema.parse(parseJsonOrUndefined(row.limitsHit)),
@@ -59,14 +66,15 @@ export const searchRunRepository = {
     configType: string;
     configHash: string;
   }) {
-    return toSearchRun(
-      await db.searchRun.create({ data: { ...run, status: "running", stage: RUN_STAGES[0] } }),
-    );
+    const row = await db.searchRun.create({ data: { ...run, status: "running", stage: RUN_STAGES[0] } });
+    return toSearchRun(row, noLeads());
   },
 
   async findById(id: string): Promise<SearchRun | null> {
     const row = await db.searchRun.findUnique({ where: { id } });
-    return row ? toSearchRun(row) : null;
+    if (!row) return null;
+    const counts = await tierCountsByRun([id]);
+    return toSearchRun(row, counts.get(id) ?? noLeads());
   },
 
   async findMany(filter: { configId?: string }): Promise<SearchRun[]> {
@@ -74,7 +82,8 @@ export const searchRunRepository = {
       where: filter,
       orderBy: [{ startedAt: "desc" }, { id: "desc" }],
     });
-    return rows.map(toSearchRun);
+    const counts = await tierCountsByRun(rows.map((row) => row.id));
+    return rows.map((row) => toSearchRun(row, counts.get(row.id) ?? noLeads()));
   },
 
   async hasRunningRun(configId: string): Promise<boolean> {

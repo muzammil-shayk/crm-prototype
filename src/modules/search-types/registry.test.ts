@@ -139,3 +139,19 @@ describe("parseSearchConfigInput", () => {
     ]);
   });
 });
+
+describe("filter help text", () => {
+  it.each(searchTypes.map((type) => [type.id, type] as const))(
+    "%s says industries and locations drop leads",
+    (_id, type) => {
+      const help = (key: string) => type.fields.find((field) => field.key === key)?.help;
+
+      expect(help("industries")).toBe(
+        "Only leads from these industries are kept. A lead with no stated industry is dropped. Leave empty to accept any industry.",
+      );
+      expect(help("locations")).toBe(
+        "Only leads in these places are kept. Leave empty to search everywhere. Include Remote to keep remote posts. A lead with no stated location is dropped. Add cities too for countries we do not list.",
+      );
+    },
+  );
+});

@@ -9,7 +9,10 @@ async function waitUntilSettled(id: string) {
     const { body } = await read(
       await searchItemRoutes.GET(jsonRequest("GET", `/api/searches/${id}`), idContext(id)),
     );
-    const view = body as { run: { status: string }; leads: { tier: string; evidence: string[] }[] };
+    const view = body as {
+      run: { status: string; tierCounts: Record<string, number> };
+      leads: { tier: string; evidence: string[] }[];
+    };
     if (view.run.status !== "running") return view;
     await new Promise((resolve) => setTimeout(resolve, 10));
   }
@@ -31,13 +34,17 @@ describe("search routes", () => {
       {},
     );
     const { body } = await read(response);
-    const runId = (body as { run: { id: string } }).run.id;
+    const { id: runId, tierCounts } = (body as { run: { id: string; tierCounts: unknown } }).run;
 
     expect(response.status).toBe(202);
+    expect(tierCounts).toEqual({ strong: 0, medium: 0, weak: 0 });
     expect(response.headers.get("location")).toBe(`/api/searches/${runId}`);
     const view = await waitUntilSettled(runId);
     expect(view.run.status).toBe("completed");
     expect(view.leads.length).toBeGreaterThan(0);
+    const counted = { strong: 0, medium: 0, weak: 0, ...view.run.tierCounts };
+    for (const lead of view.leads) counted[lead.tier as keyof typeof counted] -= 1;
+    expect(counted).toEqual({ strong: 0, medium: 0, weak: 0 });
   });
 
   it("answers 400 when configId is missing", async () => {

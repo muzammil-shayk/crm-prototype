@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseSearchConfigInput } from "@/modules/search-types/registry";
+import { fixturePostings } from "../../../../test/mock-postings";
 import type { OrganizationProfile, RetrievedLead } from "../provider-types";
 import { MockLlmProvider } from "./mock-llm-provider";
-import { mockPostings } from "./mock-postings";
 
 const signal = new AbortController().signal;
 const llm = new MockLlmProvider();
@@ -34,7 +34,7 @@ const organizations: OrganizationProfile[] = [
 ];
 
 function posting(company: string): RetrievedLead {
-  const found = mockPostings.find((candidate) => candidate.company === company);
+  const found = fixturePostings.find((candidate) => candidate.company === company);
   if (!found) throw new Error(`No mock posting for ${company}`);
   return found;
 }
@@ -80,6 +80,24 @@ describe("MockLlmProvider", () => {
 
     expect(evaluation.matchedOrganizationId).toBe("org_northwind");
     expect(evaluation.explanation).toContain("Northwind Data Studio covers dbt and data engineering.");
+  });
+
+  it("credits a location reached through a country's short name", async () => {
+    const shortNames = parseSearchConfigInput({
+      ...buyersConfig,
+      criteria: { ...buyersConfig.criteria, locations: ["UK"] },
+    });
+
+    const evaluation = await evaluate("Harbourside Dental Group", shortNames);
+
+    expect(evaluation.score).toBe(90);
+    expect(evaluation.explanation).toContain("Bristol, United Kingdom matches the target locations.");
+  });
+
+  it("gives no location points to a lead outside the target locations", async () => {
+    const evaluation = await evaluate("Meridian Physio");
+
+    expect(evaluation.explanation).toContain("Austin, United States is outside the target locations.");
   });
 
   it("gives the same answer every time", async () => {

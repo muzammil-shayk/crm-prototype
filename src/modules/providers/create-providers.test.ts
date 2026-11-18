@@ -18,4 +18,14 @@ describe("createProviders", () => {
       'LLM_PROVIDER "openai" is not available. Supported: mock.',
     );
   });
+
+  it.each(["", "0", "400", "5000"])("accepts MOCK_DELAY_MS=%j", (value) => {
+    expect(() => createProviders({ MOCK_DELAY_MS: value })).not.toThrow();
+  });
+
+  it.each(["-1", "5001", "1.5", "slow", " ", "\t"])("refuses MOCK_DELAY_MS=%j", (value) => {
+    expect(() => createProviders({ MOCK_DELAY_MS: value })).toThrow(
+      `MOCK_DELAY_MS must be a whole number of milliseconds from 0 to 5000 (got "${value}").`,
+    );
+  });
 });

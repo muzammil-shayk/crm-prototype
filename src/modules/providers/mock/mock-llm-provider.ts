@@ -1,6 +1,7 @@
 import { mentions, sentencesOf } from "@/lib/text";
 import { queryTermsOf } from "@/modules/search-types/registry";
 import type { EvaluationRequest, LlmProvider } from "../provider-types";
+import { simulateLatency } from "./mock-latency";
 import {
   budgetSignal,
   engagementSignal,
@@ -49,7 +50,10 @@ function scoreLead({ lead, config, organizations }: EvaluationRequest) {
 export class MockLlmProvider implements LlmProvider {
   readonly id = "mock-llm";
 
-  evaluateLead(request: EvaluationRequest, _signal: AbortSignal): Promise<string> {
-    return Promise.resolve(JSON.stringify(scoreLead(request)));
+  constructor(private readonly delayMs = 0) {}
+
+  async evaluateLead(request: EvaluationRequest, signal: AbortSignal): Promise<string> {
+    await simulateLatency(this.delayMs, signal);
+    return JSON.stringify(scoreLead(request));
   }
 }

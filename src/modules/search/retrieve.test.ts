@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { MockSearchProvider } from "@/modules/providers/mock/mock-search-provider";
 import type { SearchProvider, SearchQuery } from "@/modules/providers/provider-types";
+import { fixtureSearch } from "../../../test/mock-postings";
 import { memoryCache, pipelineContext } from "../../../test/pipeline-context";
 import { CostBudget } from "./cost-budget";
 import { retrieve } from "./retrieve";
@@ -11,7 +11,7 @@ const queries: SearchQuery[] = [
 ];
 
 function countingSearch(id = "mock-search"): SearchProvider & { calls: string[] } {
-  const inner = new MockSearchProvider();
+  const inner = fixtureSearch();
   const calls: string[] = [];
   return {
     id,
@@ -42,7 +42,7 @@ describe("retrieve", () => {
       search: (query, signal) =>
         query.text === "patient portal"
           ? Promise.reject(new Error("429 Too Many Requests"))
-          : new MockSearchProvider().search(query, signal),
+          : fixtureSearch().search(query, signal),
     };
 
     const outcome = await retrieve(queries, pipelineContext({ search: flaky }));

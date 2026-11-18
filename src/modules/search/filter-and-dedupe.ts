@@ -1,5 +1,12 @@
 import { mentions } from "@/lib/text";
 import type { RetrievedLead } from "@/modules/providers/provider-types";
+import { matchesIndustry, matchesLocation } from "./target-filters";
+
+interface LeadFilters {
+  excludedKeywords: readonly string[];
+  industries: readonly string[];
+  locations: readonly string[];
+}
 
 function canonicalUrl(url: string): string {
   if (!URL.canParse(url)) return url.trim();
@@ -10,13 +17,14 @@ function canonicalUrl(url: string): string {
 
 export function filterAndDedupe(
   leads: RetrievedLead[],
-  excludedKeywords: readonly string[],
+  { excludedKeywords, industries, locations }: LeadFilters,
   maxLeads: number,
 ) {
   const seen = new Set<string>();
   const kept: RetrievedLead[] = [];
   let duplicates = 0;
   let excluded = 0;
+  let outsideFilters = 0;
   for (const lead of leads) {
     const key = canonicalUrl(lead.url);
     if (seen.has(key)) {
@@ -29,7 +37,17 @@ export function filterAndDedupe(
       excluded += 1;
       continue;
     }
+    if (!matchesLocation(lead.location, locations) || !matchesIndustry(lead.industry, industries)) {
+      outsideFilters += 1;
+      continue;
+    }
     kept.push(lead);
   }
-  return { leads: kept.slice(0, maxLeads), duplicates, excluded, truncated: kept.length > maxLeads };
+  return {
+    leads: kept.slice(0, maxLeads),
+    duplicates,
+    excluded,
+    outsideFilters,
+    truncated: kept.length > maxLeads,
+  };
 }

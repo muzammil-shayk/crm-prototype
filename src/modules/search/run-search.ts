@@ -75,7 +75,7 @@ export async function runSearch(
   const retrieved = await retrieve(queries, context, progressBetween(hooks, "retrieving", 5, 40));
 
   progressBetween(hooks, "filtering", 40, 45);
-  const filtered = filterAndDedupe(retrieved.leads, config.criteria.excludedKeywords, deps.limits.maxLeads);
+  const filtered = filterAndDedupe(retrieved.leads, config.criteria, deps.limits.maxLeads);
   if (filtered.truncated) limitsHit.push("max_leads");
 
   const evaluated = await evaluate(
@@ -98,6 +98,7 @@ export async function runSearch(
     retrieved: retrieved.leads.length,
     duplicates: filtered.duplicates,
     excluded: filtered.excluded,
+    outsideFilters: filtered.outsideFilters,
     evaluated: evaluated.leads.length,
     evaluationFailures: evaluated.failures.length,
     costUnits: budget.spent,

@@ -1,5 +1,5 @@
 import { MockLlmProvider } from "@/modules/providers/mock/mock-llm-provider";
-import { MockSearchProvider } from "@/modules/providers/mock/mock-search-provider";
+import { fixtureSearch } from "./mock-postings";
 import { CostBudget } from "@/modules/search/cost-budget";
 import type { CachedResult, PipelineContext, ResultCache } from "@/modules/search/pipeline-types";
 
@@ -17,7 +17,7 @@ export function memoryCache(): ResultCache & { entries: Map<string, CachedResult
 
 export function pipelineContext(overrides: Partial<PipelineContext> = {}): PipelineContext {
   return {
-    search: new MockSearchProvider(),
+    search: fixtureSearch(),
     llm: new MockLlmProvider(),
     cache: memoryCache(),
     searchCacheTtlMs: 60 * 60 * 1000,

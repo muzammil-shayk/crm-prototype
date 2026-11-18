@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globalSetup: ["./test/global-setup.ts"],
-    env: { DATABASE_URL: "file:./test.db" },
+    env: { DATABASE_URL: "file:./test.db", MOCK_DELAY_MS: "0" },
     fileParallelism: false,
   },
 });

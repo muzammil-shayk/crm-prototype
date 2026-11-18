@@ -1,50 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { ConflictError, NotFoundError } from "@/lib/errors";
-import { createConfig } from "@/modules/configs/config-service";
-import { MockLlmProvider } from "@/modules/providers/mock/mock-llm-provider";
-import { MockSearchProvider } from "@/modules/providers/mock/mock-search-provider";
+import { createConfig, updateConfig } from "@/modules/configs/config-service";
 import type { SearchProvider } from "@/modules/providers/provider-types";
 import { resetDatabase, seedOrganizations } from "../../../test/database";
 import { memoryCache } from "../../../test/pipeline-context";
-import type { SearchDependencies } from "./run-search";
+import { dependencies, heldSearch, settled } from "../../../test/search-runs";
 import { searchRunRepository } from "./search-run-repository";
 import { cancelSearch, getSearchRun, listSearchRuns, startSearch } from "./search-service";
-
-function dependencies(search: SearchProvider = new MockSearchProvider()): SearchDependencies {
-  return {
-    search,
-    llm: new MockLlmProvider(),
-    cache: memoryCache(),
-    searchCacheTtlMs: 60 * 60 * 1000,
-    limits: { maxQueries: 8, maxLeads: 25, maxCostUnits: 60 },
-    retry: { attempts: 1, timeoutMs: 1000, backoffMs: 1 },
-  };
-}
-
-function heldSearch(): SearchProvider & { release: () => void } {
-  const { promise: gate, resolve: release } = Promise.withResolvers<undefined>();
-  const inner = new MockSearchProvider();
-  return {
-    id: "held-search",
-    release: () => {
-      release(undefined);
-    },
-    search: async (query, signal) => {
-      await gate;
-      return inner.search(query, signal);
-    },
-  };
-}
-
-async function settled(runId: string) {
-  for (let attempt = 0; attempt < 200; attempt += 1) {
-    const view = await getSearchRun(runId);
-    if (view.run.status !== "running") return view;
-    await new Promise((resolve) => setTimeout(resolve, 10));
-  }
-  throw new Error(`Run ${runId} did not settle`);
-}
 
 const buyersInput = {
   type: "buyers-seeking-providers",
@@ -72,13 +35,28 @@ describe("search service", () => {
       limitsHit: [],
       warnings: [],
     });
-    expect(run.stats.evaluated).toBe(3);
+    expect(run.stats).toMatchObject({ evaluated: 2, outsideFilters: 1 });
     expect(leads.map((lead) => [lead.company, lead.tier])).toEqual([
       ["Harbourside Dental Group", "medium"],
       ["Northgate Private Clinic", "weak"],
-      ["Sunrise Pediatrics", "weak"],
     ]);
     expect(leads[0]?.evidence).toHaveLength(1);
+  });
+
+  it.each([
+    ["locations", { locations: ["United States"] }],
+    ["industries", { industries: ["fintech"] }],
+  ])("asks the providers again after the %s filter changes", async (_field, change) => {
+    const config = await createConfig(buyersInput);
+    const cache = memoryCache();
+    const deps = { ...dependencies(), cache };
+    await settled((await startSearch(config.id, deps)).id);
+
+    await updateConfig(config.id, { ...buyersInput, criteria: { ...buyersInput.criteria, ...change } });
+    await settled((await startSearch(config.id, deps)).id);
+
+    const configHashes = new Set([...cache.entries.keys()].map((key) => key.split(":")[2]));
+    expect(configHashes.size).toBe(2);
   });
 
   it("links a job lead to the registered organization that can deliver it", async () => {

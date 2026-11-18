@@ -7,24 +7,17 @@ import { getConfig } from "@/modules/configs/config-service";
 import { leadRepository, type Lead } from "@/modules/leads/lead-repository";
 import { listOrganizations } from "@/modules/organizations/organization-repository";
 import type { SearchConfigInput } from "@/modules/search-types/registry";
+import { activeRuns, claimedConfigs, failOrphanedRuns } from "./active-runs";
 import { runSearch, type RunProgress, type SearchDependencies } from "./run-search";
 import { defaultSearchDependencies } from "./search-dependencies";
 import { searchRunRepository, type SearchRun } from "./search-run-repository";
 
-const RESTARTED = "The server restarted before this search finished.";
 const UNEXPECTED = "The search stopped because of an unexpected error. Try running it again.";
-
-const activeRuns = new Map<string, AbortController>();
-const claimedConfigs = new Set<string>();
 
 const alreadyRunning = () =>
   new ConflictError("run_in_progress", "A search for this config is already running.");
 
 const runListQuerySchema = z.strictObject({ configId: recordIdSchema.optional() });
-
-async function failOrphanedRuns() {
-  await searchRunRepository.failAllRunningExcept([...activeRuns.keys()], RESTARTED);
-}
 
 async function requireRun(id: string): Promise<SearchRun> {
   const run = await searchRunRepository.findById(id);

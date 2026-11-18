@@ -81,7 +81,9 @@ describe("config routes", () => {
   it("lists configs under `configs`", async () => {
     await createOne();
     const response = await read(await configCollectionRoutes.GET(jsonRequest("GET", "/api/configs"), {}));
-    expect((response.body as { configs: unknown[] }).configs).toHaveLength(1);
+    const { configs } = response.body as { configs: unknown[] };
+    expect(configs).toHaveLength(1);
+    expect(configs[0]).toMatchObject({ lastRun: null, runCount: 0 });
   });
 
   it("answers 400 for a malformed id and 404 for an unknown one", async () => {

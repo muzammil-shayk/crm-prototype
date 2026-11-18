@@ -1,5 +1,6 @@
 import { formatUsd, joinAsList, mentions } from "@/lib/text";
 import { industryOptions } from "@/modules/search-types/shared-criteria";
+import { matchesLocation } from "@/modules/search/target-filters";
 import type { OrganizationProfile, RetrievedLead } from "../provider-types";
 
 export interface Signal {
@@ -29,7 +30,7 @@ export function industrySignal(lead: RetrievedLead, industries: readonly string[
 
 export function locationSignal(lead: RetrievedLead, locations: readonly string[]): Signal | null {
   if (locations.length === 0) return null;
-  return locations.some((location) => mentions(lead.location, location))
+  return matchesLocation(lead.location, locations)
     ? { points: 15, reason: `${lead.location} matches the target locations.` }
     : { points: 0, reason: `${lead.location} is outside the target locations.` };
 }

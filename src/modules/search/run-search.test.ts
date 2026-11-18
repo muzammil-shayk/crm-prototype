@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { SearchProvider } from "@/modules/providers/provider-types";
-import { MockSearchProvider } from "@/modules/providers/mock/mock-search-provider";
 import { parseSearchConfigInput } from "@/modules/search-types/registry";
+import { fixtureSearch } from "../../../test/mock-postings";
 import { memoryCache } from "../../../test/pipeline-context";
 import { MockLlmProvider } from "@/modules/providers/mock/mock-llm-provider";
 import { runSearch, type RunProgress, type SearchDependencies } from "./run-search";
@@ -20,7 +20,7 @@ const config = parseSearchConfigInput({
 
 function dependencies(overrides: Partial<SearchDependencies> = {}): SearchDependencies {
   return {
-    search: new MockSearchProvider(),
+    search: fixtureSearch(),
     llm: new MockLlmProvider(),
     cache: memoryCache(),
     searchCacheTtlMs: 60 * 60 * 1000,
@@ -40,6 +40,35 @@ function start(deps: SearchDependencies, signal = new AbortController().signal) 
 }
 
 describe("runSearch", () => {
+  it("keeps only jobs posted in the target places and industries", async () => {
+    const jobs = parseSearchConfigInput({
+      type: "jobs-for-our-organizations",
+      name: "Remote data work for shops and clinics",
+      criteria: {
+        keywords: ["data pipeline", "cloud migration"],
+        industries: ["ecommerce", "healthcare"],
+        locations: ["Remote"],
+        servicesToMatch: ["dbt"],
+      },
+    });
+
+    const result = await runSearch(
+      { config: jobs, organizations: [], configHash: "hash-jobs" },
+      dependencies(),
+      {
+        signal: new AbortController().signal,
+        onProgress: () => undefined,
+      },
+    );
+
+    expect(result.leads.map((lead) => lead.company).sort()).toEqual([
+      "Calder Health Analytics",
+      "Fenwick Retail Group",
+      "Hollis & Grant",
+    ]);
+    expect(result.stats.outsideFilters).toBe(4);
+  });
+
   it("classifies every lead with an explanation and quoted evidence", async () => {
     const { outcome, progress } = start(dependencies());
     const result = await outcome;
@@ -49,12 +78,9 @@ describe("runSearch", () => {
       ["Harbourside Dental Group", "strong"],
       ["Copperleaf Insurance", "strong"],
       ["Pinewood Credit Union", "strong"],
-      ["Halden Logistics", "medium"],
-      ["Ivory Lane Hotels", "medium"],
       ["Northgate Private Clinic", "weak"],
       ["Ledgerline", "weak"],
       ["Meridian Physio", "weak"],
-      ["Tallis Learning Trust", "weak"],
     ]);
     expect(result.leads.find((lead) => lead.company === "Northgate Private Clinic")?.evidence).toEqual([]);
     expect(result.stats).toEqual({
@@ -63,9 +89,10 @@ describe("runSearch", () => {
       retrieved: 12,
       duplicates: 2,
       excluded: 1,
-      evaluated: 9,
+      outsideFilters: 3,
+      evaluated: 6,
       evaluationFailures: 0,
-      costUnits: 12,
+      costUnits: 9,
     });
     expect(progress.map((update) => update.stage).filter((stage, i, all) => stage !== all[i - 1])).toEqual([
       "generating_queries",
@@ -85,7 +112,7 @@ describe("runSearch", () => {
       search: (query, signal) =>
         query.text === "patient portal"
           ? Promise.reject(new Error("503 Service Unavailable"))
-          : new MockSearchProvider().search(query, signal),
+          : fixtureSearch().search(query, signal),
     };
 
     const result = await start(dependencies({ search })).outcome;

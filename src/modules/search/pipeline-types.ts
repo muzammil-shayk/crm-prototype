@@ -41,6 +41,7 @@ export interface RunStats {
   retrieved: number;
   duplicates: number;
   excluded: number;
+  outsideFilters: number;
   evaluated: number;
   evaluationFailures: number;
   costUnits: number;
