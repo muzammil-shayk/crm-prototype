@@ -7,7 +7,8 @@ import { getConfig } from "@/modules/configs/config-service";
 import { leadRepository, type Lead } from "@/modules/leads/lead-repository";
 import { listOrganizations } from "@/modules/organizations/organization-repository";
 import type { SearchConfigInput } from "@/modules/search-types/registry";
-import { activeRuns, claimedConfigs, failOrphanedRuns } from "./active-runs";
+import { activeRuns, claimedConfigs, failOrphanedRuns, type ActiveRun } from "./active-runs";
+import { classify } from "./classify";
 import { runSearch, type RunProgress, type SearchDependencies } from "./run-search";
 import { defaultSearchDependencies } from "./search-dependencies";
 import { searchRunRepository, type SearchRun } from "./search-run-repository";
@@ -44,7 +45,7 @@ async function executeRun(
   config: SearchConfigInput,
   configHash: string,
   deps: SearchDependencies,
-  signal: AbortSignal,
+  { controller: { signal }, evaluatedSoFar }: ActiveRun,
 ) {
   const progress = progressWriter(runId);
   try {
@@ -52,6 +53,7 @@ async function executeRun(
     const outcome = await runSearch({ config, organizations, configHash }, deps, {
       signal,
       onProgress: progress.push,
+      onLeadEvaluated: (lead) => evaluatedSoFar.push(lead),
     });
     await progress.flush();
     await searchRunRepository.finish(runId, outcome);
@@ -69,8 +71,8 @@ async function launchRun(configId: string, deps: SearchDependencies): Promise<Se
   if (await searchRunRepository.hasRunningRun(id)) throw alreadyRunning();
 
   const runId = randomUUID();
-  const controller = new AbortController();
-  activeRuns.set(runId, controller);
+  const active: ActiveRun = { controller: new AbortController(), evaluatedSoFar: [] };
+  activeRuns.set(runId, active);
   const configHash = stableHash({
     type: config.type,
     description: config.description,
@@ -84,7 +86,7 @@ async function launchRun(configId: string, deps: SearchDependencies): Promise<Se
       configType: config.type,
       configHash,
     });
-    void executeRun(run.id, config, configHash, deps, controller.signal)
+    void executeRun(run.id, config, configHash, deps, active)
       .catch(console.error)
       .finally(() => {
         activeRuns.delete(runId);
@@ -126,11 +128,14 @@ export async function listSearchRuns(query: unknown): Promise<SearchRun[]> {
 export async function cancelSearch(id: string): Promise<SearchRun> {
   await failOrphanedRuns();
   const run = await requireRun(id);
-  const stopped = run.status === "running" && (await searchRunRepository.stop(id, "cancelled", null));
+  const active = activeRuns.get(id);
+  const leadsSoFar = classify(active?.evaluatedSoFar ?? []);
+  const stopped =
+    run.status === "running" && (await searchRunRepository.stop(id, "cancelled", null, leadsSoFar));
   if (!stopped) {
     const { status } = await requireRun(id);
     throw new ConflictError("run_not_cancellable", `This search has already finished (${status}).`);
   }
-  activeRuns.get(id)?.abort();
+  active?.controller.abort();
   return requireRun(id);
 }

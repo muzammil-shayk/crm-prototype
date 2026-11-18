@@ -5,7 +5,7 @@ import { createConfig, updateConfig } from "@/modules/configs/config-service";
 import type { SearchProvider } from "@/modules/providers/provider-types";
 import { resetDatabase, seedOrganizations } from "../../../test/database";
 import { memoryCache } from "../../../test/pipeline-context";
-import { dependencies, heldSearch, settled } from "../../../test/search-runs";
+import { dependencies, heldLlm, heldSearch, settled } from "../../../test/search-runs";
 import { searchRunRepository } from "./search-run-repository";
 import { cancelSearch, getSearchRun, listSearchRuns, startSearch } from "./search-service";
 
@@ -147,6 +147,41 @@ describe("search service", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(await getSearchRun(run.id)).toMatchObject({ run: { status: "cancelled" }, leads: [] });
+  });
+
+  it("keeps the leads evaluated before a cancel and adds none after it", async () => {
+    const config = await createConfig(buyersInput);
+    const llm = heldLlm(1);
+    const run = await startSearch(config.id, { ...dependencies(), llm });
+    await llm.reached;
+
+    const cancelled = await cancelSearch(run.id);
+    llm.release();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(cancelled).toMatchObject({ status: "cancelled", tierCounts: { strong: 0, medium: 0, weak: 1 } });
+    const { run: stored, leads } = await getSearchRun(run.id);
+    expect(stored).toMatchObject({ status: "cancelled", tierCounts: { strong: 0, medium: 0, weak: 1 } });
+    expect(leads.map((lead) => [lead.company, lead.tier])).toEqual([["Northgate Private Clinic", "weak"]]);
+  });
+
+  it("gives a full answer to the next run after a cancelled one", async () => {
+    const config = await createConfig(buyersInput);
+    const cache = memoryCache();
+    const llm = heldLlm(1);
+    const first = await startSearch(config.id, { ...dependencies(), cache, llm });
+    await llm.reached;
+    await cancelSearch(first.id);
+    llm.release();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const { run, leads } = await settled((await startSearch(config.id, { ...dependencies(), cache })).id);
+
+    expect(run).toMatchObject({ status: "completed", tierCounts: { strong: 0, medium: 1, weak: 1 } });
+    expect(leads.map((lead) => [lead.company, lead.tier])).toEqual([
+      ["Harbourside Dental Group", "medium"],
+      ["Northgate Private Clinic", "weak"],
+    ]);
   });
 
   it("refuses to cancel a finished search", async () => {

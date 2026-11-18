@@ -26,6 +26,8 @@ const outcome: SearchOutcome = {
     duplicates: 0,
     excluded: 0,
     outsideFilters: 4,
+    outsideLocation: 3,
+    outsideIndustry: 1,
     evaluated: 1,
     evaluationFailures: 0,
     costUnits: 2,
@@ -105,12 +107,44 @@ describe("searchRunRepository stats", () => {
     expect((await searchRunRepository.findById(run.id))?.stats.outsideFilters).toBe(4);
   });
 
-  it("reads zero filtered leads for a run stored before the filters existed", async () => {
-    const run = await startedRun("run-older");
-    const { outsideFilters: _dropped, ...olderStats } = outcome.stats;
+  it("keeps the location and industry split of the filter drops", async () => {
+    const run = await startedRun("run-split");
+    await searchRunRepository.finish(run.id, outcome);
+
+    expect((await searchRunRepository.findById(run.id))?.stats).toMatchObject({
+      outsideLocation: 3,
+      outsideIndustry: 1,
+    });
+  });
+
+  it("reads a zero split for a run stored before the split existed", async () => {
+    const run = await startedRun("run-before-split");
+    const { outsideLocation: _location, outsideIndustry: _industry, ...olderStats } = outcome.stats;
     await db.searchRun.update({ where: { id: run.id }, data: { stats: JSON.stringify(olderStats) } });
 
-    expect((await searchRunRepository.findById(run.id))?.stats).toEqual({ ...olderStats, outsideFilters: 0 });
+    expect((await searchRunRepository.findById(run.id))?.stats).toEqual({
+      ...olderStats,
+      outsideLocation: 0,
+      outsideIndustry: 0,
+    });
+  });
+
+  it("reads zero filtered leads for a run stored before the filters existed", async () => {
+    const run = await startedRun("run-older");
+    const {
+      outsideFilters: _dropped,
+      outsideLocation: _location,
+      outsideIndustry: _industry,
+      ...olderStats
+    } = outcome.stats;
+    await db.searchRun.update({ where: { id: run.id }, data: { stats: JSON.stringify(olderStats) } });
+
+    expect((await searchRunRepository.findById(run.id))?.stats).toEqual({
+      ...olderStats,
+      outsideFilters: 0,
+      outsideLocation: 0,
+      outsideIndustry: 0,
+    });
   });
 });
 
@@ -136,5 +170,32 @@ describe("searchRunRepository.finish", () => {
 
     expect((await searchRunRepository.findById(run.id))?.status).toBe("cancelled");
     expect(await db.lead.count({ where: { runId: run.id } })).toBe(0);
+  });
+});
+
+describe("searchRunRepository.stop", () => {
+  beforeEach(resetDatabase);
+
+  it("stores the leads found so far together with the cancel", async () => {
+    const run = await startedRun("run-cancelled-with-leads");
+
+    expect(await searchRunRepository.stop(run.id, "cancelled", null, outcome.leads)).toBe(true);
+
+    expect(await searchRunRepository.findById(run.id)).toMatchObject({
+      status: "cancelled",
+      tierCounts: { strong: 1, medium: 0, weak: 0 },
+    });
+  });
+
+  it("adds no leads when the run had already finished", async () => {
+    const run = await startedRun("run-finished-before-cancel");
+    await searchRunRepository.finish(run.id, outcome);
+
+    expect(await searchRunRepository.stop(run.id, "cancelled", null, outcome.leads)).toBe(false);
+
+    expect(await searchRunRepository.findById(run.id)).toMatchObject({
+      status: "completed",
+      tierCounts: { strong: 1, medium: 0, weak: 0 },
+    });
   });
 });

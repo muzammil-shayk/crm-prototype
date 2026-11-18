@@ -89,6 +89,28 @@ describe("filterAndDedupe", () => {
     expect(outcome.excluded).toBe(0);
   });
 
+  it("splits the filter drops into location and industry, counting a lead failing both under location", () => {
+    const leads = [
+      retrievedLead({
+        url: "https://a.example/1",
+        location: "Leeds, United Kingdom",
+        industry: "healthcare",
+      }),
+      retrievedLead({ url: "https://a.example/2", location: "Sharjah", industry: "saas" }),
+      retrievedLead({ url: "https://a.example/3", location: "Leeds, United Kingdom", industry: "saas" }),
+      retrievedLead({ url: "https://a.example/4", location: "Dubai", industry: "healthcare" }),
+    ];
+
+    const outcome = filterAndDedupe(
+      leads,
+      { excludedKeywords: [], industries: ["healthcare"], locations: ["UAE"] },
+      10,
+    );
+
+    expect(outcome.leads.map((lead) => lead.url)).toEqual(["https://a.example/4"]);
+    expect([outcome.outsideLocation, outcome.outsideIndustry, outcome.outsideFilters]).toEqual([2, 1, 3]);
+  });
+
   it("counts a lead that is both excluded and outside the filters once, as excluded", () => {
     const lead = retrievedLead({ body: "Unpaid trial first.", location: "Berlin, Germany" });
 

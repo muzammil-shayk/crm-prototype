@@ -51,13 +51,16 @@ export async function evaluate(
   organizations: readonly OrganizationProfile[],
   context: PipelineContext,
   onItem: ItemProgress = () => undefined,
+  onLead: (lead: EvaluatedLead) => void = () => undefined,
 ): Promise<{ leads: EvaluatedLead[]; failures: string[] }> {
   const evaluated: EvaluatedLead[] = [];
   const failures: string[] = [];
   for (const [index, lead] of leads.entries()) {
     context.signal.throwIfAborted();
     const verdict = await judgeLead(lead, config, organizations, context);
-    evaluated.push({ ...lead, ...verdict.evaluation, evaluationError: verdict.error });
+    const evaluatedLead = { ...lead, ...verdict.evaluation, evaluationError: verdict.error };
+    evaluated.push(evaluatedLead);
+    onLead(evaluatedLead);
     if (verdict.failed) failures.push(`Lead "${lead.company}": ${verdict.error ?? "unknown error"}`);
     onItem(index + 1, leads.length);
   }

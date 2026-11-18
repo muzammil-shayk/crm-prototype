@@ -3,7 +3,13 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { parseJsonOrUndefined, parseStringList } from "@/lib/json";
 import { leadRowsFor } from "@/modules/leads/lead-repository";
-import { RUN_STAGES, type LimitHit, type RunStage, type RunStats } from "./pipeline-types";
+import {
+  RUN_STAGES,
+  type ClassifiedLead,
+  type LimitHit,
+  type RunStage,
+  type RunStats,
+} from "./pipeline-types";
 import type { RunProgress, SearchOutcome } from "./run-search";
 import { noLeads, tierCountsByRun, type TierCounts } from "./run-tier-counts";
 
@@ -38,6 +44,8 @@ const statsSchema = z.object({
   duplicates: count,
   excluded: count,
   outsideFilters: count,
+  outsideLocation: count,
+  outsideIndustry: count,
   evaluated: count,
   evaluationFailures: count,
   costUnits: count,
@@ -112,12 +120,20 @@ export const searchRunRepository = {
     });
   },
 
-  async stop(id: string, status: "cancelled" | "failed", error: string | null): Promise<boolean> {
-    const { count: updated } = await db.searchRun.updateMany({
-      where: stillRunning(id),
-      data: { status, error, finishedAt: new Date() },
+  async stop(
+    id: string,
+    status: "cancelled" | "failed",
+    error: string | null,
+    leadsSoFar: readonly ClassifiedLead[] = [],
+  ): Promise<boolean> {
+    return db.$transaction(async (tx) => {
+      const { count: updated } = await tx.searchRun.updateMany({
+        where: stillRunning(id),
+        data: { status, error, finishedAt: new Date() },
+      });
+      if (updated === 1) await tx.lead.createMany({ data: leadRowsFor(id, leadsSoFar) });
+      return updated === 1;
     });
-    return updated === 1;
   },
 
   async failAllRunningExcept(liveIds: string[], error: string): Promise<void> {

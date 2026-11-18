@@ -24,7 +24,8 @@ export function filterAndDedupe(
   const kept: RetrievedLead[] = [];
   let duplicates = 0;
   let excluded = 0;
-  let outsideFilters = 0;
+  let outsideLocation = 0;
+  let outsideIndustry = 0;
   for (const lead of leads) {
     const key = canonicalUrl(lead.url);
     if (seen.has(key)) {
@@ -37,8 +38,12 @@ export function filterAndDedupe(
       excluded += 1;
       continue;
     }
-    if (!matchesLocation(lead.location, locations) || !matchesIndustry(lead.industry, industries)) {
-      outsideFilters += 1;
+    if (!matchesLocation(lead.location, locations)) {
+      outsideLocation += 1;
+      continue;
+    }
+    if (!matchesIndustry(lead.industry, industries)) {
+      outsideIndustry += 1;
       continue;
     }
     kept.push(lead);
@@ -47,7 +52,9 @@ export function filterAndDedupe(
     leads: kept.slice(0, maxLeads),
     duplicates,
     excluded,
-    outsideFilters,
+    outsideLocation,
+    outsideIndustry,
+    outsideFilters: outsideLocation + outsideIndustry,
     truncated: kept.length > maxLeads,
   };
 }

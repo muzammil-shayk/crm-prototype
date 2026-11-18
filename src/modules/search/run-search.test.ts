@@ -66,7 +66,7 @@ describe("runSearch", () => {
       "Fenwick Retail Group",
       "Hollis & Grant",
     ]);
-    expect(result.stats.outsideFilters).toBe(4);
+    expect(result.stats).toMatchObject({ outsideFilters: 4, outsideLocation: 2, outsideIndustry: 2 });
   });
 
   it("classifies every lead with an explanation and quoted evidence", async () => {
@@ -90,6 +90,8 @@ describe("runSearch", () => {
       duplicates: 2,
       excluded: 1,
       outsideFilters: 3,
+      outsideLocation: 2,
+      outsideIndustry: 1,
       evaluated: 6,
       evaluationFailures: 0,
       costUnits: 9,

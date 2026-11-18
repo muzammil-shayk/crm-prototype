@@ -7,6 +7,7 @@ import { filterAndDedupe } from "./filter-and-dedupe";
 import { generateQueries } from "./generate-queries";
 import type {
   ClassifiedLead,
+  EvaluatedLead,
   ItemProgress,
   LimitHit,
   PipelineContext,
@@ -46,6 +47,7 @@ export interface SearchOutcome {
 interface RunHooks {
   signal: AbortSignal;
   onProgress: (update: RunProgress) => void;
+  onLeadEvaluated?: (lead: EvaluatedLead) => void;
 }
 
 const ALL_QUERIES_FAILED = "Every search query failed, so there were no leads to evaluate.";
@@ -84,6 +86,7 @@ export async function runSearch(
     organizations,
     context,
     progressBetween(hooks, "evaluating", 45, 95),
+    hooks.onLeadEvaluated,
   );
 
   progressBetween(hooks, "classifying", 95, 100);
@@ -99,6 +102,8 @@ export async function runSearch(
     duplicates: filtered.duplicates,
     excluded: filtered.excluded,
     outsideFilters: filtered.outsideFilters,
+    outsideLocation: filtered.outsideLocation,
+    outsideIndustry: filtered.outsideIndustry,
     evaluated: evaluated.leads.length,
     evaluationFailures: evaluated.failures.length,
     costUnits: budget.spent,

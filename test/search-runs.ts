@@ -1,5 +1,5 @@
 import { MockLlmProvider } from "@/modules/providers/mock/mock-llm-provider";
-import type { SearchProvider } from "@/modules/providers/provider-types";
+import type { LlmProvider, SearchProvider } from "@/modules/providers/provider-types";
 import type { SearchDependencies } from "@/modules/search/run-search";
 import { getSearchRun } from "@/modules/search/search-service";
 import { fixtureSearch } from "./mock-postings";
@@ -27,6 +27,28 @@ export function heldSearch(): SearchProvider & { release: () => void } {
     search: async (query, signal) => {
       await gate;
       return inner.search(query, signal);
+    },
+  };
+}
+
+export function heldLlm(passThrough: number): LlmProvider & { release: () => void; reached: Promise<void> } {
+  const { promise: gate, resolve: release } = Promise.withResolvers<undefined>();
+  const { promise: reached, resolve: reach } = Promise.withResolvers<undefined>();
+  const inner = new MockLlmProvider();
+  let calls = 0;
+  return {
+    id: inner.id,
+    reached: reached.then(() => undefined),
+    release: () => {
+      release(undefined);
+    },
+    evaluateLead: async (request, signal) => {
+      calls += 1;
+      if (calls > passThrough) {
+        reach(undefined);
+        await gate;
+      }
+      return inner.evaluateLead(request, signal);
     },
   };
 }

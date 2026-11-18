@@ -42,6 +42,8 @@ export interface RunStats {
   duplicates: number;
   excluded: number;
   outsideFilters: number;
+  outsideLocation: number;
+  outsideIndustry: number;
   evaluated: number;
   evaluationFailures: number;
   costUnits: number;

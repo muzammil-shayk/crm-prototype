@@ -19,6 +19,8 @@ interface Expected {
     duplicates: number;
     excluded: number;
     outsideFilters: number;
+    outsideLocation: number;
+    outsideIndustry: number;
     evaluated: number;
   };
   leads: Row[];
@@ -28,7 +30,16 @@ const expected: Record<string, Expected> = {
   "Healthcare and fintech teams hiring an app agency": {
     status: "completed",
     limitsHit: [],
-    stats: { queries: 3, retrieved: 17, duplicates: 5, excluded: 2, outsideFilters: 3, evaluated: 7 },
+    stats: {
+      queries: 3,
+      retrieved: 17,
+      duplicates: 5,
+      excluded: 2,
+      outsideFilters: 3,
+      outsideLocation: 2,
+      outsideIndustry: 1,
+      evaluated: 7,
+    },
     leads: [
       ["Harbourside Dental Group", "strong", 90],
       ["Lakeshore Family Health", "strong", 90],
@@ -42,7 +53,16 @@ const expected: Record<string, Expected> = {
   "Gulf brands shopping for SEO and content": {
     status: "completed",
     limitsHit: [],
-    stats: { queries: 2, retrieved: 11, duplicates: 2, excluded: 1, outsideFilters: 4, evaluated: 4 },
+    stats: {
+      queries: 2,
+      retrieved: 11,
+      duplicates: 2,
+      excluded: 1,
+      outsideFilters: 4,
+      outsideLocation: 3,
+      outsideIndustry: 1,
+      evaluated: 4,
+    },
     leads: [
       ["Al Noor Residences", "strong", 90],
       ["Souq Lane", "strong", 90],
@@ -53,7 +73,16 @@ const expected: Record<string, Expected> = {
   "Security audits for fintech and SaaS": {
     status: "completed",
     limitsHit: [],
-    stats: { queries: 3, retrieved: 12, duplicates: 2, excluded: 3, outsideFilters: 1, evaluated: 6 },
+    stats: {
+      queries: 3,
+      retrieved: 12,
+      duplicates: 2,
+      excluded: 3,
+      outsideFilters: 1,
+      outsideLocation: 0,
+      outsideIndustry: 1,
+      evaluated: 6,
+    },
     leads: [
       ["Fieldstone Payments", "strong", 75],
       ["Brightline Pharmacy", "medium", 55],
@@ -66,7 +95,16 @@ const expected: Record<string, Expected> = {
   "Data and cloud contracts for our studios": {
     status: "completed",
     limitsHit: [],
-    stats: { queries: 6, retrieved: 23, duplicates: 13, excluded: 1, outsideFilters: 2, evaluated: 7 },
+    stats: {
+      queries: 6,
+      retrieved: 23,
+      duplicates: 13,
+      excluded: 1,
+      outsideFilters: 2,
+      outsideLocation: 2,
+      outsideIndustry: 0,
+      evaluated: 7,
+    },
     leads: [
       ["Fenwick Retail Group", "strong", 85, "Northwind Data Studio"],
       ["Calder Health Analytics", "strong", 75, "Northwind Data Studio"],
@@ -80,7 +118,16 @@ const expected: Record<string, Expected> = {
   "Mobile builds for Kestrel and Quayside": {
     status: "completed",
     limitsHit: [],
-    stats: { queries: 5, retrieved: 18, duplicates: 9, excluded: 1, outsideFilters: 3, evaluated: 5 },
+    stats: {
+      queries: 5,
+      retrieved: 18,
+      duplicates: 9,
+      excluded: 1,
+      outsideFilters: 3,
+      outsideLocation: 2,
+      outsideIndustry: 1,
+      evaluated: 5,
+    },
     leads: [
       ["Learnloop", "strong", 100, "Kestrel Mobile"],
       ["Sabz Microfinance", "strong", 100, "Kestrel Mobile"],
@@ -92,7 +139,16 @@ const expected: Record<string, Expected> = {
   "Health IT and logistics integrations": {
     status: "partial",
     limitsHit: ["max_queries"],
-    stats: { queries: 8, retrieved: 6, duplicates: 3, excluded: 0, outsideFilters: 1, evaluated: 2 },
+    stats: {
+      queries: 8,
+      retrieved: 6,
+      duplicates: 3,
+      excluded: 0,
+      outsideFilters: 1,
+      outsideLocation: 1,
+      outsideIndustry: 0,
+      evaluated: 2,
+    },
     leads: [
       ["Rahbar Diagnostics", "strong", 100, "Medlink Health IT"],
       ["Falcon Haulage", "strong", 90, "Tessera Freight Systems"],
