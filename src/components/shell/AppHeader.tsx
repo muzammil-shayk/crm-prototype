@@ -29,7 +29,8 @@ export function AppHeader() {
     <header className={styles.header}>
       <div className={styles.bar}>
         <Link href="/" className={styles.wordmark}>
-          Lead CRM
+          <span className={styles.wordLead}>Lead</span>
+          <span className={styles.wordCrm}>CRM</span>
         </Link>
         <nav aria-label="Main">
           <ul className={styles.nav}>

@@ -1,16 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "@/api-client/api";
 import { useResource } from "@/api-client/use-resource";
 import { LeadDetail } from "@/components/leads/LeadDetail";
 import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
+import { ConfigBrief } from "./ConfigBrief";
+import { withLiveRun } from "./live-run";
 import { RunHistory } from "./RunHistory";
 import { RunPanel } from "./RunPanel";
 import { SearchControls } from "./SearchControls";
 import { searchUrl } from "./start-search";
 import styles from "./search.module.css";
 import { useRunPolling } from "./use-run-polling";
+import { useStartSearch } from "./use-start-search";
 
 interface LiveSearchProps {
   initialConfigId: string | null;
@@ -24,10 +27,11 @@ export function LiveSearch({ initialConfigId, initialRunId }: LiveSearchProps) {
   const [runId, setRunId] = useState(initialRunId);
   const [openLeadId, setOpenLeadId] = useState<string | null>(null);
   const polling = useRunPolling(runId);
+  const liveRun = polling.snapshot?.run ?? null;
 
-  const configList = configs.resource.status === "ready" ? configs.resource.data : [];
+  const configList = withLiveRun(configs.resource.status === "ready" ? configs.resource.data : [], liveRun);
   const find = (id: string | null | undefined) => configList.find((config) => config.id === id);
-  const config = find(chosenConfigId) ?? find(polling.snapshot?.run.configId) ?? configList[0];
+  const config = find(chosenConfigId) ?? find(liveRun?.configId) ?? configList[0];
   const configId = config?.id ?? null;
   const linkedConfigGone =
     configs.resource.status === "ready" &&
@@ -36,6 +40,15 @@ export function LiveSearch({ initialConfigId, initialRunId }: LiveSearchProps) {
     !find(chosenConfigId);
   const typeList = types.resource.status === "ready" ? types.resource.data : [];
   const openLead = polling.snapshot?.leads.find((lead) => lead.id === openLeadId) ?? null;
+  const running = liveRun?.status === "running" && liveRun.configId === configId;
+
+  const loadRuns = useCallback(
+    () => (configId ? api.searches.list(configId) : Promise.resolve([])),
+    [configId],
+  );
+  const runs = useResource(loadRuns);
+  const lastRun =
+    runs.resource.status === "ready" ? (runs.resource.data[0] ?? null) : (config?.lastRun ?? null);
 
   useEffect(() => {
     if (linkedConfigGone)
@@ -48,6 +61,7 @@ export function LiveSearch({ initialConfigId, initialRunId }: LiveSearchProps) {
     setOpenLeadId(null);
     window.history.replaceState(null, "", searchUrl(nextConfigId, nextRunId ?? undefined));
   };
+  const starter = useStartSearch(show);
 
   return (
     <div className="page">
@@ -78,21 +92,22 @@ export function LiveSearch({ initialConfigId, initialRunId }: LiveSearchProps) {
           <aside className={styles.side}>
             <SearchControls
               configs={configList}
-              types={typeList}
               configId={configId}
-              currentRun={polling.snapshot?.run ?? null}
+              running={running}
+              starting={starter.starting}
+              error={starter.error}
               onSelectConfig={(id) => {
+                starter.clearError();
                 show(id, null);
               }}
-              onStarted={(startedConfigId, startedRunId) => {
-                show(startedConfigId, startedRunId);
-              }}
+              onStart={(id) => void starter.start(id)}
             />
             {configId ? (
               <RunHistory
-                key={configId}
                 configId={configId}
-                currentRun={polling.snapshot?.run ?? null}
+                runs={runs.resource}
+                onRetry={runs.reload}
+                currentRun={liveRun}
                 selectedRunId={runId}
                 onSelect={(id) => {
                   show(configId, id);
@@ -101,21 +116,34 @@ export function LiveSearch({ initialConfigId, initialRunId }: LiveSearchProps) {
             ) : null}
           </aside>
           <section className={styles.main} aria-label="Search run">
-            <RunPanel
-              runId={runId}
-              snapshot={polling.snapshot}
-              pollError={polling.error}
-              types={typeList}
-              onRunChange={polling.applyRun}
-              onOpenLead={setOpenLeadId}
-            />
+            {runId ? (
+              <RunPanel
+                snapshot={polling.snapshot}
+                pollError={polling.error}
+                types={typeList}
+                onRunChange={polling.applyRun}
+                onOpenLead={setOpenLeadId}
+              />
+            ) : config ? (
+              <ConfigBrief
+                config={config}
+                lastRun={lastRun}
+                types={typeList}
+                running={running}
+                starting={starter.starting}
+                onStart={() => void starter.start(config.id)}
+                onOpenRun={(id) => {
+                  show(config.id, id);
+                }}
+              />
+            ) : null}
           </section>
         </div>
       ) : null}
 
       <LeadDetail
         lead={openLead}
-        configType={polling.snapshot?.run.configType ?? ""}
+        configType={liveRun?.configType ?? ""}
         types={typeList}
         onClose={() => {
           setOpenLeadId(null);

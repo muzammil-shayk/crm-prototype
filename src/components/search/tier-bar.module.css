@@ -1,0 +1,95 @@
+.track {
+  display: flex;
+  overflow: hidden;
+  background: var(--sunken);
+  border-radius: 999px;
+}
+
+.track[data-size="full"] {
+  height: 10px;
+}
+
+.track[data-size="mini"] {
+  flex: none;
+  width: 72px;
+  height: 6px;
+}
+
+.segment {
+  flex: none;
+  transition: width var(--slow) var(--ease);
+}
+
+.segment[data-after-other] {
+  box-shadow: inset 2px 0 0 var(--surface);
+}
+
+.segment[data-tier="strong"],
+.swatch[data-tier="strong"] {
+  background: var(--strong-fill);
+}
+
+.segment[data-tier="medium"],
+.swatch[data-tier="medium"] {
+  background: var(--medium-fill);
+}
+
+.segment[data-tier="weak"],
+.swatch[data-tier="weak"] {
+  background: var(--weak-hatch);
+}
+
+.full {
+  display: grid;
+  gap: 10px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 20px;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.legendCount {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.note {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+.mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.miniText {
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.tallyText {
+  font-size: var(--text-sm);
+  color: var(--muted);
+}

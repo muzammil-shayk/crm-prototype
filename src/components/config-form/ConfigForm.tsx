@@ -7,6 +7,8 @@ import { ApiError } from "@/api-client/api-error";
 import type { SearchConfig, SearchType } from "@/api-client/types";
 import { useResource } from "@/api-client/use-resource";
 import { EmptyState, ErrorState, LoadingRows, Notice } from "@/components/ui/states";
+import { ConfigAside } from "./ConfigAside";
+import styles from "./config-form.module.css";
 import { ConfigEditor } from "./ConfigEditor";
 
 function ReadyEditor({ types, config }: { types: readonly SearchType[]; config: SearchConfig | null }) {
@@ -30,7 +32,7 @@ export function ConfigForm({ configId }: { configId?: string }) {
   const title = configId ? "Edit search config" : "New search config";
 
   return (
-    <div className="page page-narrow">
+    <div className="page">
       <div className="page-head">
         <div>
           <Link href="/" className="back-link">
@@ -39,26 +41,31 @@ export function ConfigForm({ configId }: { configId?: string }) {
           <h1 className="page-title">{title}</h1>
         </div>
       </div>
-      {resource.status === "loading" ? <LoadingRows rows={4} label="Loading the form" /> : null}
-      {resource.status === "error" ? (
-        resource.error instanceof ApiError && resource.error.code === "not_found" ? (
-          <EmptyState
-            title="This config no longer exists"
-            action={
-              <Link href="/" className="button">
-                Back to search configs
-              </Link>
-            }
-          >
-            It may have been deleted in another tab. Nothing was changed.
-          </EmptyState>
-        ) : (
-          <ErrorState error={resource.error} onRetry={reload} />
-        )
-      ) : null}
-      {resource.status === "ready" ? (
-        <ReadyEditor types={resource.data[0]} config={resource.data[1]} />
-      ) : null}
+      <div className={styles.layout}>
+        <div className={styles.main}>
+          {resource.status === "loading" ? <LoadingRows rows={4} label="Loading the form" /> : null}
+          {resource.status === "error" ? (
+            resource.error instanceof ApiError && resource.error.code === "not_found" ? (
+              <EmptyState
+                title="This config no longer exists"
+                action={
+                  <Link href="/" className="button">
+                    Back to search configs
+                  </Link>
+                }
+              >
+                It may have been deleted in another tab. Nothing was changed.
+              </EmptyState>
+            ) : (
+              <ErrorState error={resource.error} onRetry={reload} />
+            )
+          ) : null}
+          {resource.status === "ready" ? (
+            <ReadyEditor types={resource.data[0]} config={resource.data[1]} />
+          ) : null}
+        </div>
+        <ConfigAside />
+      </div>
     </div>
   );
 }

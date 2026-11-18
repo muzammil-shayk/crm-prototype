@@ -1,5 +1,8 @@
 import type { Tier } from "@/lib/tiers";
-import type { SearchConfig as StoredSearchConfig } from "@/modules/configs/config-service";
+import type {
+  SearchConfig as StoredSearchConfig,
+  SearchConfigSummary as StoredSearchConfigSummary,
+} from "@/modules/configs/config-service";
 import type { Lead as StoredLead } from "@/modules/leads/lead-repository";
 import type { LeadStatus } from "@/modules/leads/lead-status";
 import type { LimitHit, RunStage, RunStats } from "@/modules/search/pipeline-types";
@@ -7,7 +10,7 @@ import type { RunStatus, SearchRun as StoredSearchRun } from "@/modules/search/s
 import type { FieldDefinition, FieldOption } from "@/modules/search-types/field-definition";
 import type { SearchTypeId } from "@/modules/search-types/registry";
 
-type Json<T> = T extends Date
+export type Json<T> = T extends Date
   ? string
   : T extends readonly (infer Item)[]
     ? Json<Item>[]
@@ -16,6 +19,8 @@ type Json<T> = T extends Date
       : T;
 
 export type SearchConfig = Json<StoredSearchConfig>;
+export type SearchConfigSummary = Json<StoredSearchConfigSummary>;
+export type LastRun = SearchConfigSummary["lastRun"];
 export type SearchRun = Json<StoredSearchRun>;
 export type Lead = Json<StoredLead>;
 

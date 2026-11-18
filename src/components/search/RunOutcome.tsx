@@ -26,14 +26,16 @@ const STAT_LABELS: [keyof RunStats, string][] = [
   ["retrieved", "Posts fetched"],
   ["duplicates", "Duplicates removed"],
   ["excluded", "Excluded by keyword"],
+  ["outsideFilters", "Outside location or industry"],
   ["evaluated", "Leads scored"],
   ["costUnits", "Provider calls"],
 ];
 
 export function RunStatsList({ stats }: { stats: RunStats }) {
+  const shown = STAT_LABELS.filter(([key]) => key !== "outsideFilters" || stats.outsideFilters > 0);
   return (
     <dl className={styles.stats}>
-      {STAT_LABELS.map(([key, label]) => (
+      {shown.map(([key, label]) => (
         <div key={key} className={styles.stat}>
           <dt>{label}</dt>
           <dd className="mono">{stats[key]}</dd>
@@ -61,7 +63,11 @@ export function RunOutcome({ run, leadCount }: { run: SearchRun; leadCount: numb
       <Notice tone={tone} title={title}>
         {run.error ? <p>{run.error}</p> : null}
         {run.status === "completed" && leadCount === 0 ? (
-          <p>Try broader keywords or fewer exclusions, then run it again.</p>
+          <p>
+            {run.stats.outsideFilters > 0
+              ? `${plural(run.stats.outsideFilters, "post")} fell outside the location or industry filters. Widen them, or try broader keywords, then run it again.`
+              : "Try broader keywords or fewer exclusions, then run it again."}
+          </p>
         ) : null}
         {explanations.length > 0 ? (
           <ul className={styles.explanations}>

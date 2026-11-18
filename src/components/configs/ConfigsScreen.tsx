@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { api } from "@/api-client/api";
 import { describeApiError } from "@/api-client/api-error";
-import type { SearchConfig } from "@/api-client/types";
+import type { SearchConfig, SearchConfigSummary, SearchType } from "@/api-client/types";
 import { useResource } from "@/api-client/use-resource";
 import { searchUrl, startOrResumeSearch } from "@/components/search/start-search";
 import { PlusIcon } from "@/components/ui/icons";
@@ -14,15 +14,22 @@ import { ConfigFilters } from "./ConfigFilters";
 import { ConfigList, configLinkId } from "./ConfigList";
 import { DeleteConfigDialog } from "./DeleteConfigDialog";
 import { filterConfigs, focusAfterRemoval, NO_FILTER, type ConfigFilter } from "./filter-configs";
+import styles from "./configs.module.css";
 
-export function ConfigsScreen() {
+interface ConfigsScreenProps {
+  initialConfigs?: SearchConfigSummary[];
+  initialTypes?: SearchType[];
+}
+
+export function ConfigsScreen({ initialConfigs, initialTypes }: ConfigsScreenProps) {
   const router = useRouter();
-  const configs = useResource(api.configs.list);
-  const types = useResource(api.searchTypes);
+  const configs = useResource(api.configs.list, initialConfigs);
+  const types = useResource(api.searchTypes, initialTypes);
   const [filter, setFilter] = useState<ConfigFilter>(NO_FILTER);
   const [deleting, setDeleting] = useState<SearchConfig | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionDone, setActionDone] = useState<string | null>(null);
   const [focusTarget, setFocusTarget] = useState<{ id: string | null } | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
@@ -38,6 +45,7 @@ export function ConfigsScreen() {
     if (busyId !== null) return;
     setBusyId(config.id);
     setActionError(null);
+    setActionDone(null);
     try {
       await action();
     } catch (error) {
@@ -56,7 +64,10 @@ export function ConfigsScreen() {
   const duplicate = (config: SearchConfig) =>
     act(config, async () => {
       const copy = await api.configs.duplicate(config.id);
-      configs.update((list) => [copy, ...list]);
+      configs.update((list) => [{ ...copy, lastRun: null, runCount: 0 }, ...list]);
+      if (filterConfigs([copy], filter).length === 0) setFilter(NO_FILTER);
+      setActionDone(`Duplicated as “${copy.name}”. It is first in the list.`);
+      setFocusTarget({ id: copy.id });
     });
 
   return (
@@ -76,10 +87,19 @@ export function ConfigsScreen() {
         </Link>
       </div>
 
+      <div className={styles.feedback} role="status">
+        {actionDone ? (
+          <Notice tone="success">
+            <p>{actionDone}</p>
+          </Notice>
+        ) : null}
+      </div>
       {actionError ? (
-        <Notice tone="error" live>
-          <p>{actionError}</p>
-        </Notice>
+        <div className={styles.feedback}>
+          <Notice tone="error" live>
+            <p>{actionError}</p>
+          </Notice>
+        </div>
       ) : null}
 
       {configs.resource.status === "loading" ? <LoadingRows rows={3} label="Loading search configs" /> : null}
@@ -112,6 +132,7 @@ export function ConfigsScreen() {
           setDeleting(null);
         }}
         onDeleted={(id) => {
+          setActionDone(null);
           if (configs.resource.status === "ready") {
             const visible = filterConfigs(configs.resource.data, filter).map((config) => config.id);
             setFocusTarget({ id: focusAfterRemoval(visible, id) });

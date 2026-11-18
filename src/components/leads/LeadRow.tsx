@@ -1,5 +1,5 @@
 import type { Lead } from "@/api-client/types";
-import { formatRelative } from "@/components/format";
+import { RelativeTime } from "@/components/ui/RelativeTime";
 import { LEAD_STATUS_LABEL } from "@/components/search/run-labels";
 import styles from "./leads.module.css";
 
@@ -25,7 +25,7 @@ export function LeadRow({ lead, onOpen }: { lead: Lead; onOpen: (leadId: string)
             <span>{lead.company}</span>
             <span>{lead.location}</span>
             <span>
-              {lead.source}, <time dateTime={lead.publishedAt}>{formatRelative(lead.publishedAt)}</time>
+              {lead.source}, <RelativeTime iso={lead.publishedAt} />
             </span>
           </span>
           {lead.matchedOrganization ? (

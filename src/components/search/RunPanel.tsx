@@ -1,14 +1,13 @@
 import type { RunSnapshot } from "@/api-client/api";
 import type { SearchRun, SearchType } from "@/api-client/types";
 import { LeadResults } from "@/components/leads/LeadResults";
-import { EmptyState, ErrorState, LoadingRows, Notice } from "@/components/ui/states";
+import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
 import { RunHeader } from "./RunHeader";
 import { RunOutcome } from "./RunOutcome";
 import { RunProgress } from "./RunProgress";
 import styles from "./search.module.css";
 
 interface RunPanelProps {
-  runId: string | null;
   snapshot: RunSnapshot | null;
   pollError: unknown;
   types: readonly SearchType[];
@@ -16,15 +15,7 @@ interface RunPanelProps {
   onOpenLead: (leadId: string) => void;
 }
 
-export function RunPanel({ runId, snapshot, pollError, types, onRunChange, onOpenLead }: RunPanelProps) {
-  if (!runId) {
-    return (
-      <EmptyState title="No run open">
-        Press Search to run the selected config, or open one of its past runs. Progress and results show up
-        here.
-      </EmptyState>
-    );
-  }
+export function RunPanel({ snapshot, pollError, types, onRunChange, onOpenLead }: RunPanelProps) {
   if (!snapshot) {
     return pollError ? (
       <ErrorState error={pollError} subject="run" />

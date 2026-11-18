@@ -2,7 +2,7 @@ import type { Lead, SearchType, SearchTypeId } from "@/api-client/types";
 import { formatDate, formatUsd } from "@/components/format";
 import styles from "./leads.module.css";
 
-function optionLabel(types: readonly SearchType[], value: string): string {
+export function optionLabel(types: readonly SearchType[], value: string): string {
   for (const type of types) {
     for (const field of type.fields) {
       if (field.kind !== "multiselect") continue;

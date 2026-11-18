@@ -144,7 +144,17 @@ select.input {
   border-radius: 4px;
 }
 
-.badge[data-tone="strong"],
+.badge[data-tone="strong"] {
+  color: #fff;
+  background: var(--strong-fill);
+}
+
+.badge[data-tone="weak"] {
+  color: var(--weak-ink);
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
 .badge[data-tone="completed"],
 .badge[data-tone="contacted"] {
   color: var(--strong-ink);
@@ -155,6 +165,10 @@ select.input {
 .badge[data-tone="partial"] {
   color: var(--medium-ink);
   background: var(--medium-bg);
+}
+
+.badge[data-tone="medium"] {
+  box-shadow: inset 0 0 0 1px var(--medium-fill);
 }
 
 .badge[data-tone="running"],

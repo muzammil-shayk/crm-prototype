@@ -1,5 +1,13 @@
 import { requestJson, requestNoContent } from "./request";
-import type { Lead, LeadStatus, SearchConfig, SearchConfigDraft, SearchRun, SearchType } from "./types";
+import type {
+  Lead,
+  LeadStatus,
+  SearchConfig,
+  SearchConfigDraft,
+  SearchConfigSummary,
+  SearchRun,
+  SearchType,
+} from "./types";
 
 const configPath = (id: string) => `/api/configs/${encodeURIComponent(id)}`;
 const runPath = (id: string) => `/api/searches/${encodeURIComponent(id)}`;
@@ -14,8 +22,8 @@ export const api = {
     (await requestJson<{ searchTypes: SearchType[] }>("/api/search-types")).searchTypes,
 
   configs: {
-    list: async (): Promise<SearchConfig[]> =>
-      (await requestJson<{ configs: SearchConfig[] }>("/api/configs")).configs,
+    list: async (): Promise<SearchConfigSummary[]> =>
+      (await requestJson<{ configs: SearchConfigSummary[] }>("/api/configs")).configs,
     get: async (id: string): Promise<SearchConfig> =>
       (await requestJson<{ config: SearchConfig }>(configPath(id))).config,
     create: async (input: SearchConfigDraft): Promise<SearchConfig> =>

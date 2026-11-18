@@ -41,7 +41,10 @@ export function useConfigSubmit(config: SearchConfig | null, draft: Draft) {
   };
 
   const clearError = (key: string) => {
-    if (errors[key]) setErrors({ ...errors, [key]: undefined });
+    if (!errors[key]) return;
+    const next = { ...errors, [key]: undefined };
+    setErrors(next);
+    if (formError === NEEDS_ATTENTION && Object.values(next).every((error) => !error)) setFormError(null);
   };
 
   const keepErrorsFor = (fields: readonly FieldDefinition[]) => {

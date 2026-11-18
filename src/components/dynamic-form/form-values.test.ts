@@ -59,10 +59,10 @@ describe("validateFields", () => {
   it("mirrors the server's required and number rules", () => {
     expect(validateFields(fields, { keywords: ["  "], minBudgetUsd: "-5" })).toEqual({
       keywords: "Add at least one entry",
-      minBudgetUsd: "Enter 0 or more",
+      minBudgetUsd: "This cannot be negative",
     });
     expect(validateFields([budget], { minBudgetUsd: "12.5" })).toEqual({
-      minBudgetUsd: "Enter a whole number",
+      minBudgetUsd: "Use a whole number, without decimals",
     });
     expect(validateFields(fields, { keywords: ["dbt"], minBudgetUsd: "0" })).toEqual({});
   });
@@ -72,7 +72,12 @@ describe("validateFields", () => {
     const all = searchTypes.flatMap((type) => type.fields.map(required));
     const messages = Object.values(validateFields(all, {}));
     expect(new Set(messages)).toEqual(
-      new Set(["Add at least one entry", "Choose at least one option", "Fill this in", "Enter a number"]),
+      new Set([
+        "Add at least one entry",
+        "Choose at least one option",
+        "Write something here",
+        "Enter a number",
+      ]),
     );
     for (const type of searchTypes) {
       expect(validateFields(type.fields, {})).toEqual(

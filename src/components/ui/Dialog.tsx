@@ -15,6 +15,7 @@ interface DialogProps {
 
 export function Dialog({ open, onClose, title, variant = "center", footer, children }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
+  const headRef = useRef<HTMLElement>(null);
   const titleId = useId();
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function Dialog({ open, onClose, title, variant = "center", footer, child
     >
       {open ? (
         <div className={styles.dialogFrame}>
-          <header className={styles.dialogHead}>
+          <header ref={headRef} className={styles.dialogHead}>
             <h2 id={titleId} className={styles.dialogTitle}>
               {title}
             </h2>
@@ -45,7 +46,14 @@ export function Dialog({ open, onClose, title, variant = "center", footer, child
               <CloseIcon />
             </button>
           </header>
-          <div className={styles.dialogBody}>{children}</div>
+          <div
+            className={styles.dialogBody}
+            onScroll={(event) => {
+              headRef.current?.toggleAttribute("data-scrolled", event.currentTarget.scrollTop > 0);
+            }}
+          >
+            {children}
+          </div>
           {footer ? <footer className={styles.dialogFoot}>{footer}</footer> : null}
         </div>
       ) : null}

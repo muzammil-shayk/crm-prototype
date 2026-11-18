@@ -49,8 +49,9 @@ function fieldProblem(field: FieldDefinition, values: FormValues): string | unde
     const text = readText(field, values).trim();
     if (text === "") return field.required ? "Enter a number" : undefined;
     const number = Number(text);
-    if (!Number.isInteger(number)) return "Enter a whole number";
-    return number < field.min ? `Enter ${field.min} or more` : undefined;
+    if (!Number.isInteger(number)) return "Use a whole number, without decimals";
+    if (number >= field.min) return undefined;
+    return field.min === 0 ? "This cannot be negative" : `Use ${field.min} or more`;
   }
   if (!field.required) return undefined;
   const filled = usesList(field)
@@ -63,7 +64,7 @@ function fieldProblem(field: FieldDefinition, values: FormValues): string | unde
 const MISSING: Record<Exclude<FieldDefinition["kind"], "number">, string> = {
   tags: "Add at least one entry",
   multiselect: "Choose at least one option",
-  textarea: "Fill this in",
+  textarea: "Write something here",
 };
 
 export function validateFields(fields: readonly FieldDefinition[], values: FormValues): FieldErrors {

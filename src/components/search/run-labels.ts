@@ -4,7 +4,7 @@ import type { LeadStatus, LimitHit, RunStage, RunStatus, Tier } from "@/api-clie
 export const STAGES: readonly { id: RunStage; label: string }[] = [
   { id: "generating_queries", label: "Writing queries" },
   { id: "retrieving", label: "Fetching posts" },
-  { id: "filtering", label: "Removing duplicates" },
+  { id: "filtering", label: "Filtering posts" },
   { id: "evaluating", label: "Scoring leads" },
   { id: "classifying", label: "Sorting into tiers" },
 ];

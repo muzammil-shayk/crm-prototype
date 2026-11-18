@@ -13,10 +13,11 @@ interface Settled<T> {
 
 const LOADING = { status: "loading" } as const;
 
-export function useResource<T>(load: () => Promise<T>) {
+export function useResource<T>(load: () => Promise<T>, initial?: T) {
   const [attempt, setAttempt] = useState(0);
-  const [settled, setSettled] = useState<Settled<T> | null>(null);
-
+  const [settled, setSettled] = useState<Settled<T> | null>(() =>
+    initial === undefined ? null : { load, attempt: 0, result: { status: "ready", data: initial } },
+  );
   useEffect(() => {
     let live = true;
     load().then(
@@ -24,7 +25,12 @@ export function useResource<T>(load: () => Promise<T>) {
         if (live) setSettled({ load, attempt, result: { status: "ready", data } });
       },
       (error: unknown) => {
-        if (live) setSettled({ load, attempt, result: { status: "error", error } });
+        if (!live) return;
+        setSettled((shown) =>
+          shown?.load === load && shown.attempt === attempt && shown.result.status === "ready"
+            ? shown
+            : { load, attempt, result: { status: "error", error } },
+        );
       },
     );
     return () => {

@@ -7,10 +7,10 @@ export interface ConfigFilter {
 
 export const NO_FILTER: ConfigFilter = { text: "", type: "" };
 
-export function filterConfigs(
-  configs: readonly SearchConfig[],
+export function filterConfigs<Config extends SearchConfig>(
+  configs: readonly Config[],
   { text, type }: ConfigFilter,
-): SearchConfig[] {
+): Config[] {
   const needle = text.trim().toLowerCase();
   return configs.filter((config) => {
     if (type && config.type !== type) return false;

@@ -23,6 +23,10 @@
   --medium-ink: #6f4b00;
   --weak-bg: #ebe9e3;
   --weak-ink: #55524a;
+  --strong-fill: #2f6b38;
+  --medium-fill: #b07a12;
+  --weak-fill: #88847a;
+  --weak-hatch: repeating-linear-gradient(-45deg, var(--weak-fill) 0 1.5px, var(--line) 1.5px 4px);
 
   --danger: #a3322d;
   --danger-hover: #8a2a26;

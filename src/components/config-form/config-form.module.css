@@ -1,3 +1,62 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 760px) minmax(0, 1fr);
+  align-items: start;
+  gap: 48px;
+}
+
+.main {
+  min-width: 0;
+}
+
+.aside {
+  position: sticky;
+  top: 88px;
+  display: grid;
+  gap: 28px;
+  max-width: 360px;
+  padding-top: 4px;
+}
+
+.asideSection {
+  display: grid;
+  gap: 10px;
+}
+
+.asideTitle {
+  font-size: var(--text-sm);
+}
+
+.limits {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
+.limits .numeric {
+  display: inline-block;
+  min-width: 2ch;
+  margin-right: 4px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.tiers {
+  display: grid;
+  gap: 12px;
+}
+
+.tier {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 12px;
+  font-size: var(--text-sm);
+  color: var(--ink-2);
+}
+
 .form {
   display: grid;
   gap: 20px;
@@ -117,6 +176,18 @@
   margin-right: auto;
 }
 
+@media (max-width: 1100px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 32px;
+  }
+
+  .aside {
+    position: static;
+    max-width: 640px;
+  }
+}
+
 @media (max-width: 720px) {
   .section {
     padding: 20px 16px 24px;
@@ -128,5 +199,16 @@
 
   .actions :global(.button-large) {
     flex: 1 1 auto;
+  }
+}
+
+@media (pointer: coarse) {
+  .typeOption {
+    min-height: 44px;
+  }
+
+  .typeOption input {
+    width: 20px;
+    height: 20px;
   }
 }

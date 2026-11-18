@@ -1,0 +1,117 @@
+// @vitest-environment happy-dom
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+import type { RunStats, SearchConfigSummary, SearchType } from "@/api-client/types";
+import { ConfigBrief, targetRules } from "./ConfigBrief";
+import { RunStatsList } from "./RunOutcome";
+
+afterEach(cleanup);
+
+const types: SearchType[] = [
+  {
+    id: "buyers-seeking-providers",
+    label: "Organizations looking for providers",
+    description: "",
+    fields: [
+      {
+        key: "industries",
+        label: "Industries",
+        help: "",
+        required: false,
+        kind: "multiselect",
+        options: [
+          { value: "real-estate", label: "Real estate" },
+          { value: "ecommerce", label: "E-commerce and retail" },
+        ],
+      },
+    ],
+  },
+];
+
+const gulf: SearchConfigSummary = {
+  id: "cfg-gulf",
+  type: "buyers-seeking-providers",
+  name: "Gulf brands shopping for SEO and content",
+  description: "",
+  criteria: {
+    keywords: ["SEO agency"],
+    excludedKeywords: [],
+    industries: ["real-estate", "ecommerce"],
+    locations: ["UAE", "Saudi Arabia"],
+    rules: "",
+  },
+  createdAt: "2026-11-18T09:00:00.000Z",
+  updatedAt: "2026-11-18T09:00:00.000Z",
+  lastRun: null,
+  runCount: 0,
+};
+
+const stats: RunStats = {
+  queries: 3,
+  queryFailures: 0,
+  retrieved: 14,
+  duplicates: 2,
+  excluded: 1,
+  outsideFilters: 0,
+  evaluated: 7,
+  evaluationFailures: 0,
+  costUnits: 10,
+};
+
+describe("targetRules", () => {
+  it("accepts any location and industry when both are empty", () => {
+    expect(targetRules([], [])).toEqual(["Any location and industry is accepted."]);
+  });
+
+  it("names the kept places and industries and says unlabelled posts are dropped", () => {
+    expect(targetRules(["Dubai", "Abu Dhabi"], ["Real estate"])).toEqual([
+      "Keeps only posts located in Dubai or Abu Dhabi.",
+      "Keeps only posts whose industry is Real estate.",
+      "A post that names no location or industry is dropped.",
+    ]);
+  });
+
+  it("keeps remote posts only when Remote is listed", () => {
+    expect(targetRules(["Remote", "Pakistan"], [])).toEqual([
+      "Keeps only posts located in Pakistan, or remote.",
+      "Any industry is accepted.",
+      "A post that names no location is dropped.",
+    ]);
+    expect(targetRules(["Remote"], [])[0]).toBe("Keeps only remote posts.");
+  });
+});
+
+describe("ConfigBrief", () => {
+  it("spells out the config's filters with industry labels", () => {
+    render(
+      <ConfigBrief
+        config={gulf}
+        lastRun={null}
+        types={types}
+        running={false}
+        starting={false}
+        onStart={() => undefined}
+        onOpenRun={() => undefined}
+      />,
+    );
+    expect(
+      screen.getByText(
+        /Keeps only posts located in UAE or Saudi Arabia\. Keeps only posts whose industry is Real estate or E-commerce and retail\./,
+      ),
+    ).toBeTruthy();
+  });
+});
+
+describe("RunStatsList", () => {
+  it("hides the filter count when nothing fell outside the filters", () => {
+    render(<RunStatsList stats={stats} />);
+    expect(screen.queryByText("Outside location or industry")).toBeNull();
+    expect(screen.getAllByRole("term")).toHaveLength(6);
+  });
+
+  it("shows how many posts fell outside the filters", () => {
+    render(<RunStatsList stats={{ ...stats, outsideFilters: 4 }} />);
+    const term = screen.getByText("Outside location or industry");
+    expect(term.nextElementSibling?.textContent).toBe("4");
+  });
+});

@@ -1,6 +1,10 @@
 import Link from "next/link";
-import type { SearchConfig, SearchType } from "@/api-client/types";
-import { formatRelative, plural } from "@/components/format";
+import type { SearchConfigSummary, SearchType } from "@/api-client/types";
+import { plural } from "@/components/format";
+import { RunTally } from "@/components/search/TierBar";
+import { STATUS_LABEL } from "@/components/search/run-labels";
+import { searchUrl } from "@/components/search/start-search";
+import { RelativeTime } from "@/components/ui/RelativeTime";
 import { EmptyState } from "@/components/ui/states";
 import { filterConfigs, type ConfigFilter } from "./filter-configs";
 import styles from "./configs.module.css";
@@ -8,14 +12,14 @@ import styles from "./configs.module.css";
 export const configLinkId = (id: string) => `config-${id}`;
 
 interface ConfigListProps {
-  configs: readonly SearchConfig[];
+  configs: readonly SearchConfigSummary[];
   types: readonly SearchType[];
   filter: ConfigFilter;
   busyId: string | null;
   onClearFilter: () => void;
-  onRun: (config: SearchConfig) => void;
-  onDuplicate: (config: SearchConfig) => void;
-  onDelete: (config: SearchConfig) => void;
+  onRun: (config: SearchConfigSummary) => void;
+  onDuplicate: (config: SearchConfigSummary) => void;
+  onDelete: (config: SearchConfigSummary) => void;
 }
 
 export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...actions }: ConfigListProps) {
@@ -60,27 +64,22 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
       {visible.map((config) => (
         <li key={config.id} className={styles.row} aria-busy={busyId === config.id || undefined}>
           <div className={styles.summary}>
-            <Link id={configLinkId(config.id)} href={`/configs/${config.id}/edit`} className={styles.name}>
-              {config.name}
-            </Link>
+            <div className={styles.nameRow}>
+              <Link id={configLinkId(config.id)} href={`/configs/${config.id}/edit`} className={styles.name}>
+                {config.name}
+              </Link>
+              <span className={styles.typeChip}>{labelOf(config.type)}</span>
+            </div>
             {config.description ? <p className={styles.description}>{config.description}</p> : null}
+            <p className={styles.facts}>
+              <span>{plural(config.criteria.keywords.length, "keyword")}</span>
+              {config.runCount > 0 ? <span>{plural(config.runCount, "run")}</span> : null}
+              <span>
+                Updated <RelativeTime iso={config.updatedAt} />
+              </span>
+            </p>
           </div>
-          <dl className={styles.meta}>
-            <div>
-              <dt>Type</dt>
-              <dd>{labelOf(config.type)}</dd>
-            </div>
-            <div>
-              <dt>Keywords</dt>
-              <dd className="numeric">{config.criteria.keywords.length}</dd>
-            </div>
-            <div>
-              <dt>Updated</dt>
-              <dd>
-                <time dateTime={config.updatedAt}>{formatRelative(config.updatedAt)}</time>
-              </dd>
-            </div>
-          </dl>
+          <LastRunCell config={config} />
           <div className={styles.actions}>
             <button
               type="button"
@@ -119,5 +118,35 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
         </li>
       ))}
     </ul>
+  );
+}
+
+function LastRunCell({ config }: { config: SearchConfigSummary }) {
+  const run = config.lastRun;
+  return (
+    <dl className={styles.lastRun}>
+      <dt>Last run</dt>
+      {run ? (
+        <>
+          <dd className={styles.lastRunHead}>
+            <span className="badge" data-tone={run.status}>
+              {STATUS_LABEL[run.status]}
+            </span>
+            <RelativeTime iso={run.startedAt} />
+          </dd>
+          <dd>
+            {run.status === "completed" || run.status === "partial" ? (
+              <Link href={searchUrl(config.id, run.id)} className={styles.tallyLink}>
+                <RunTally status={run.status} tierCounts={run.tierCounts} />
+              </Link>
+            ) : (
+              <RunTally status={run.status} tierCounts={run.tierCounts} />
+            )}
+          </dd>
+        </>
+      ) : (
+        <dd className={styles.never}>Never run. Run search to fetch its first leads.</dd>
+      )}
+    </dl>
   );
 }

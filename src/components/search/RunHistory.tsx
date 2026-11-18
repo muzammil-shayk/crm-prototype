@@ -1,16 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { api } from "@/api-client/api";
+import { useEffect, useRef, useState } from "react";
 import type { SearchRun } from "@/api-client/types";
-import { useResource } from "@/api-client/use-resource";
-import { formatDateTime, plural } from "@/components/format";
+import type { Resource } from "@/api-client/use-resource";
+import { formatDateTime } from "@/components/format";
 import { ErrorState, LoadingRows } from "@/components/ui/states";
 import { STATUS_LABEL } from "./run-labels";
+import { RunTally } from "./TierBar";
 import styles from "./search.module.css";
 
 interface RunHistoryProps {
   configId: string;
+  runs: Resource<SearchRun[]>;
+  onRetry: () => void;
   currentRun: SearchRun | null;
   selectedRunId: string | null;
   onSelect: (runId: string) => void;
@@ -22,19 +24,24 @@ export function mergeRun(runs: readonly SearchRun[], current: SearchRun | null):
   return known ? runs.map((run) => (run.id === current.id ? current : run)) : [current, ...runs];
 }
 
-export const RUNS_PER_PAGE = 10;
+const RUNS_PER_PAGE = 10;
 
 export function shownRunCount(total: number, limit: number, selectedIndex: number): number {
   return Math.min(total, Math.max(limit, selectedIndex + 1));
 }
 
-export function RunHistory({ configId, currentRun, selectedRunId, onSelect }: RunHistoryProps) {
-  const load = useCallback(() => api.searches.list(configId), [configId]);
-  const { resource, reload } = useResource(load);
-
+export function RunHistory({
+  configId,
+  runs: resource,
+  onRetry,
+  currentRun,
+  selectedRunId,
+  onSelect,
+}: RunHistoryProps) {
   const belongsHere = currentRun?.configId === configId ? currentRun : null;
   const runs = resource.status === "ready" ? mergeRun(resource.data, belongsHere) : [];
-  const [limit, setLimit] = useState(RUNS_PER_PAGE);
+  const [paging, setPaging] = useState({ configId, limit: RUNS_PER_PAGE });
+  const limit = paging.configId === configId ? paging.limit : RUNS_PER_PAGE;
   const shown = shownRunCount(
     runs.length,
     limit,
@@ -56,7 +63,7 @@ export function RunHistory({ configId, currentRun, selectedRunId, onSelect }: Ru
         Past runs
       </h2>
       {resource.status === "loading" ? <LoadingRows rows={2} label="Loading past runs" /> : null}
-      {resource.status === "error" ? <ErrorState error={resource.error} onRetry={reload} /> : null}
+      {resource.status === "error" ? <ErrorState error={resource.error} onRetry={onRetry} /> : null}
       {resource.status === "ready" && runs.length === 0 ? (
         <p className={styles.historyEmpty}>This config has not been run yet.</p>
       ) : null}
@@ -78,8 +85,8 @@ export function RunHistory({ configId, currentRun, selectedRunId, onSelect }: Ru
                 <span className="badge" data-tone={run.status}>
                   {STATUS_LABEL[run.status]}
                 </span>
-                <span className={styles.runCount}>
-                  {run.status === "running" ? "In progress" : plural(run.stats.evaluated, "lead") + " scored"}
+                <span className={styles.runTally}>
+                  <RunTally status={run.status} tierCounts={run.tierCounts} />
                 </span>
               </button>
             </li>
@@ -92,7 +99,7 @@ export function RunHistory({ configId, currentRun, selectedRunId, onSelect }: Ru
           className={`button button-quiet ${styles.showOlder}`}
           onClick={() => {
             firstRevealed.current = shown;
-            setLimit(shown + RUNS_PER_PAGE);
+            setPaging({ configId, limit: shown + RUNS_PER_PAGE });
           }}
         >
           Show older runs
