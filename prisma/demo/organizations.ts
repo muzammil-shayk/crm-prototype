@@ -1,0 +1,73 @@
+export const demoOrganizations = [
+  {
+    name: "Northwind Data Studio",
+    description: "Eight-person data team building warehouses, pipelines and finance reporting.",
+    services: ["data engineering", "dbt", "Snowflake", "BigQuery", "analytics dashboards"],
+    industries: ["ecommerce", "fintech", "healthcare"],
+    location: "Lahore, Pakistan (remote-first)",
+  },
+  {
+    name: "Kestrel Mobile",
+    description: "Product studio shipping iOS and Android apps for regulated industries.",
+    services: ["React Native", "iOS", "Android", "mobile app"],
+    industries: ["fintech", "healthcare", "education"],
+    location: "Remote",
+  },
+  {
+    name: "Fernhill Web Co",
+    description: "Web agency for booking flows, patient portals and online stores.",
+    services: ["Next.js", "patient portal", "Shopify", "website redesign"],
+    industries: ["healthcare", "hospitality", "ecommerce"],
+    location: "Manchester, United Kingdom",
+  },
+  {
+    name: "Larkspur Cloud",
+    description: "Cloud engineers who migrate legacy systems and cut hosting bills.",
+    services: ["AWS", "Kubernetes", "cloud migration", "DevOps"],
+    industries: ["saas", "real-estate", "logistics"],
+    location: "Remote",
+  },
+  {
+    name: "Margalla Secure Labs",
+    description:
+      "CREST-certified testers running penetration tests and audit readiness for lenders and SaaS teams.",
+    services: ["penetration testing", "SOC 2 readiness", "ISO 27001", "security audit"],
+    industries: ["fintech", "saas", "healthcare"],
+    location: "Islamabad, Pakistan",
+  },
+  {
+    name: "Saltmarsh Digital",
+    description: "Bilingual search and content team for Gulf property, retail and hotel brands.",
+    services: ["SEO", "content marketing", "paid search", "Arabic copywriting"],
+    industries: ["ecommerce", "hospitality", "real-estate"],
+    location: "Dubai, United Arab Emirates",
+  },
+  {
+    name: "Clearbrook Compliance",
+    description: "Data protection consultants who act as outsourced DPO for clinics, schools and fintechs.",
+    services: ["GDPR compliance", "data protection audit", "DPO as a service", "policy drafting"],
+    industries: ["healthcare", "fintech", "education"],
+    location: "London, United Kingdom",
+  },
+  {
+    name: "Tessera Freight Systems",
+    description: "Logistics software house behind fleet, depot and last-mile tools for regional carriers.",
+    services: ["fleet tracking", "warehouse management system", "route optimisation", "driver app"],
+    industries: ["logistics", "manufacturing", "ecommerce"],
+    location: "Karachi, Pakistan",
+  },
+  {
+    name: "Medlink Health IT",
+    description: "Integration engineers connecting labs, hospitals and clinics across the Gulf and Pakistan.",
+    services: ["HL7 integration", "FHIR", "EHR integration", "telehealth"],
+    industries: ["healthcare"],
+    location: "Abu Dhabi, United Arab Emirates",
+  },
+  {
+    name: "Quayside Apps",
+    description: "Small studio building Flutter apps and Laravel back offices for schools and startups.",
+    services: ["Flutter", "Laravel", "web app", "MVP development"],
+    industries: ["education", "hospitality", "real-estate"],
+    location: "Lahore, Pakistan",
+  },
+];
