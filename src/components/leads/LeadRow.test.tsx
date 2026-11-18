@@ -43,7 +43,7 @@ const row = (value: Lead) => {
 describe("No quote marker", () => {
   it("explains why a Medium-sized score stayed Weak", () => {
     const button = row(lead({}));
-    expect(button.textContent).toContain("No quote");
+    expect(button.textContent).toContain("Capped to Weak: no quote");
     expect(button.textContent).toContain("Scored 45 but kept Weak: no quote from the post backs the match.");
     expect(button.querySelector("[data-no-quote]")?.textContent).toContain("45");
     expect(noQuoteVerdict(lead({}))).toBe(
@@ -54,6 +54,7 @@ describe("No quote marker", () => {
   it("marks a low score without a quote but does not strike it", () => {
     const button = row(lead({ score: 22 }));
     expect(button.textContent).toContain("No quote from the post backs the match.");
+    expect(button.textContent).not.toContain("Capped");
     expect(button.querySelector("[data-no-quote]")).toBeNull();
     expect(noQuoteVerdict(lead({ score: 22 }))).toBeNull();
   });

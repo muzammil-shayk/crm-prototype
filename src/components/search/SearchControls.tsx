@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import type { SearchConfigSummary } from "@/api-client/types";
 import { EmptyState, Notice } from "@/components/ui/states";
 import { RunTally } from "./TierBar";
@@ -23,6 +24,18 @@ export function SearchControls({
   onSelectConfig,
   onStart,
 }: SearchControlsProps) {
+  const listRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const list = listRef.current;
+    const option = list?.querySelector("input:checked")?.closest("label");
+    if (!list || !option) return;
+    const { offsetTop: top, offsetHeight: height } = option;
+    if (top < list.scrollTop || top + height > list.scrollTop + list.clientHeight) {
+      list.scrollTop = top - (list.clientHeight - height) / 2;
+    }
+  }, [configId]);
+
   if (!configId) {
     return (
       <EmptyState
@@ -59,8 +72,13 @@ export function SearchControls({
         ))}
       </select>
       <fieldset className={styles.picker}>
-        <legend className={styles.controlLabel}>Config</legend>
-        <div className={styles.pickerList}>
+        <legend className={styles.controlLabel}>
+          Config{" "}
+          <span className={`${styles.controlCount} mono`} aria-hidden="true">
+            {configs.length}
+          </span>
+        </legend>
+        <div ref={listRef} className={styles.pickerList}>
           {configs.map((config) => (
             <label key={config.id} className={styles.pickerOption}>
               <input

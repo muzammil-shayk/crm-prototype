@@ -19,34 +19,35 @@
 .wordmark {
   display: inline-flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 8px;
   color: var(--ink);
   text-decoration: none;
 }
 
+.mark {
+  align-self: center;
+  width: 22px;
+  height: 20px;
+  fill: var(--ink);
+}
+
+.mark .markStrong {
+  fill: var(--strong-fill);
+}
+
+.mark .markMedium {
+  fill: var(--medium-fill);
+}
+
+.mark .markWeak {
+  fill: var(--weak-fill);
+}
+
 .wordLead {
-  position: relative;
+  margin-left: 2px;
   font-size: 1.25rem;
   font-weight: 600;
   letter-spacing: -0.035em;
-}
-
-.wordLead::after {
-  position: absolute;
-  right: 0;
-  bottom: -3px;
-  left: 0;
-  height: 4px;
-  content: "";
-  background: linear-gradient(
-    90deg,
-    var(--strong-fill) 0 48%,
-    transparent 48% 54%,
-    var(--medium-fill) 54% 78%,
-    transparent 78% 84%,
-    var(--weak-fill) 84%
-  );
-  border-radius: 2px;
 }
 
 .wordCrm {
@@ -55,6 +56,15 @@
   font-weight: 500;
   letter-spacing: 0.08em;
   color: var(--ink-2);
+}
+
+.mode {
+  margin-left: auto;
+  padding: 3px 8px;
+  font-size: var(--text-xs);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
 }
 
 .wordmark:hover {
@@ -92,6 +102,12 @@
 
 .navLink:focus-visible {
   outline-offset: -6px;
+}
+
+@media (max-width: 720px) {
+  .mode {
+    display: none;
+  }
 }
 
 @media (max-width: 520px) {

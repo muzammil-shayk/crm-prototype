@@ -86,11 +86,6 @@
   color: var(--ink);
 }
 
-.note {
-  font-size: var(--text-sm);
-  color: var(--muted);
-}
-
 .mini {
   display: inline-flex;
   align-items: center;

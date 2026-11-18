@@ -29,6 +29,15 @@ export function AppHeader() {
     <header className={styles.header}>
       <div className={styles.bar}>
         <Link href="/" className={styles.wordmark}>
+          <svg className={styles.mark} viewBox="0 0 22 20" aria-hidden="true">
+            <rect x="0" width="3" height="20" />
+            <rect x="4.75" width="3" height="15" />
+            <rect x="9.5" width="3" height="11.5" />
+            <rect x="14.25" width="3" height="8.5" />
+            <rect x="19" width="3" height="4" className={styles.markStrong} />
+            <rect x="19" y="5" width="3" height="2.5" className={styles.markMedium} />
+            <rect x="19" y="8.5" width="3" height="1.5" className={styles.markWeak} />
+          </svg>
           <span className={styles.wordLead}>Lead</span>
           <span className={styles.wordCrm}>CRM</span>
         </Link>
@@ -47,6 +56,7 @@ export function AppHeader() {
             ))}
           </ul>
         </nav>
+        <p className={`${styles.mode} mono`}>Mock providers · offline</p>
       </div>
     </header>
   );

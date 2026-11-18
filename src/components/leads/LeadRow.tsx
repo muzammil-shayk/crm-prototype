@@ -13,6 +13,7 @@ export function LeadRow({ lead, onOpen }: { lead: Lead; onOpen: (leadId: string)
       <button
         type="button"
         className={styles.leadRow}
+        data-lead-id={lead.id}
         data-tier={lead.tier}
         data-status={lead.status}
         aria-haspopup="dialog"
@@ -20,9 +21,16 @@ export function LeadRow({ lead, onOpen }: { lead: Lead; onOpen: (leadId: string)
           onOpen(lead.id);
         }}
       >
-        <span className={`${styles.score} mono`} data-tier={lead.tier} data-no-quote={struck || undefined}>
-          <span className="visually-hidden">Score </span>
-          {lead.score}
+        <span className={styles.scoreCell}>
+          <span className={`${styles.score} mono`} data-tier={lead.tier} data-no-quote={struck || undefined}>
+            <span className="visually-hidden">Score </span>
+            {lead.score}
+          </span>
+          {struck ? (
+            <span className={styles.capped} aria-hidden="true">
+              Capped
+            </span>
+          ) : null}
         </span>
         <span className={styles.leadMain}>
           <span className={styles.leadTitle}>{lead.title}</span>
@@ -44,7 +52,7 @@ export function LeadRow({ lead, onOpen }: { lead: Lead; onOpen: (leadId: string)
           {noQuote ? (
             <span className={styles.noQuote} title={noQuote}>
               <span className={styles.noQuoteMark} aria-hidden="true" />
-              No quote
+              {struck ? "Capped to Weak: no quote" : "No quote"}
               <span className="visually-hidden">. {noQuote}</span>
             </span>
           ) : null}

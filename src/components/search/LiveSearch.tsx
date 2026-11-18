@@ -6,6 +6,7 @@ import type { SearchConfigSummary, SearchRun, SearchType } from "@/api-client/ty
 import { useResource } from "@/api-client/use-resource";
 import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
 import { ConfigBrief } from "./ConfigBrief";
+import { LatestRun, latestRunElsewhere } from "./LatestRun";
 import { RunHistory } from "./RunHistory";
 import { RunPanel } from "./RunPanel";
 import { SearchControls } from "./SearchControls";
@@ -40,6 +41,7 @@ export function LiveSearch(props: LiveSearchProps) {
   const configId = config?.id ?? null;
   const typeList = types.resource.status === "ready" ? types.resource.data : [];
   const running = liveRun?.status === "running" && liveRun.configId === configId;
+  const latest = configId ? latestRunElsewhere(configList, configId) : null;
 
   const loadRuns = useCallback(
     () => (configId ? api.searches.list(configId) : Promise.resolve([])),
@@ -126,13 +128,26 @@ export function LiveSearch(props: LiveSearchProps) {
                 onLeadChange={polling.applyLead}
               />
             ) : config ? (
-              <ConfigBrief
-                config={config}
-                types={typeList}
-                running={running}
-                starting={starter.starting}
-                onStart={() => void starter.start(config.id)}
-              />
+              <>
+                <ConfigBrief
+                  config={config}
+                  types={typeList}
+                  running={running}
+                  starting={starter.starting}
+                  onStart={() => void starter.start(config.id)}
+                />
+                {latest ? (
+                  <LatestRun
+                    key={latest.runId}
+                    config={latest.config}
+                    runId={latest.runId}
+                    onOpen={(id, run) => {
+                      pushUrl();
+                      show(id, run);
+                    }}
+                  />
+                ) : null}
+              </>
             ) : null}
           </section>
         </div>

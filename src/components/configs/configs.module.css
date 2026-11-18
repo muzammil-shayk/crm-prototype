@@ -210,6 +210,14 @@
   margin-right: 6px;
 }
 
+.actions :global(.button-quiet) {
+  color: var(--muted);
+}
+
+.actions :global(.button-quiet):hover {
+  color: var(--ink);
+}
+
 .stack {
   display: grid;
   gap: 12px;

@@ -117,28 +117,31 @@ describe("LiveSearch polling", () => {
         stage: "classifying",
         progress: 100,
         finishedAt: "2026-11-18T10:00:04.000Z",
+        stats: { ...run({}).stats, retrieved: 9, duplicates: 3, evaluated: 6, costUnits: 7 },
         tierCounts: { strong: 2, medium: 1, weak: 3 },
       }),
     ]);
     render(<LiveSearch initialConfigId={config.id} initialRunId="run-1" />);
     await settle();
 
-    const cell = (label: string) => screen.getByText(label).parentElement;
+    const step = (label: string) => screen.getByText(label).closest("li");
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("30");
-    expect(cell("Queries run")?.getAttribute("data-state")).toBe("known");
-    expect(cell("Posts fetched")?.getAttribute("data-state")).toBe("pending");
-    expect(cell("Posts fetched")?.textContent).toContain("Not counted yet");
+    expect(screen.getByText("1 query, 1 provider call")).toBeTruthy();
+    expect(step("Fetched")?.getAttribute("data-state")).toBe("pending");
+    expect(step("Fetched")?.textContent).toContain("Not counted yet");
 
     await settle(POLL_INTERVAL_MS);
     expect(screen.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("70");
     expect(screen.getByText("Scoring leads…")).toBeTruthy();
-    expect(cell("Posts fetched")?.getAttribute("data-state")).toBe("known");
-    expect(cell("Leads scored")?.querySelector("dd")?.textContent).toBe("3");
+    expect(step("Fetched")?.getAttribute("data-state")).toBe("known");
+    expect(step("Scored")?.textContent).toContain("3");
+    expect(step("Scored")?.textContent).toContain("4 waiting");
 
     await settle(POLL_INTERVAL_MS);
     expect(screen.queryByRole("progressbar")).toBeNull();
     expect(screen.getByText("Search completed. 6 leads: 2 Strong, 1 Medium, 3 Weak.")).toBeTruthy();
-    expect(document.querySelector("dl[data-replay]")).toBeNull();
+    expect(document.querySelector("figure[data-replay]")).toBeNull();
+    expect(screen.getByText("How 9 posts became 6 leads")).toBeTruthy();
 
     await settle(POLL_INTERVAL_MS * 10);
     expect(api.count("GET", "/api/searches/run-1")).toBe(3);
@@ -156,10 +159,10 @@ describe("LiveSearch polling", () => {
     ]);
     render(<LiveSearch initialConfigId={config.id} initialRunId="run-1" />);
     await settle();
-    expect(screen.getByText("Provider calls").parentElement?.getAttribute("data-state")).toBe("pending");
+    expect(screen.getByText("Writing queries", { selector: "figcaption span" })).toBeTruthy();
 
     await settle(POLL_INTERVAL_MS);
-    expect(document.querySelector("dl[data-replay]")).not.toBeNull();
+    expect(document.querySelector("figure[data-replay]")).not.toBeNull();
   });
 
   it("cancels a running search, keeps focus on the run, and stops polling", async () => {
@@ -188,8 +191,10 @@ describe("LiveSearch polling", () => {
     await settle(POLL_INTERVAL_MS);
     expect(screen.getByText("Cancelled. Kept 1 lead that was scored before you stopped.")).toBeTruthy();
     expect(screen.getByText(keptLead.title)).toBeTruthy();
-    expect(screen.getByText("Queries run").nextElementSibling?.textContent).toBe("1");
-    expect(screen.getByText("Posts fetched").nextElementSibling?.textContent).toBe("–Not reached");
+    expect(screen.getByText("1 query, 1 provider call")).toBeTruthy();
+    const fetched = screen.getByText("Fetched").closest("li");
+    expect(fetched?.textContent).toContain("Not reached");
+    expect(fetched?.textContent).toContain("Cancelled here");
     expect(document.activeElement?.textContent).toBe(config.name);
 
     const pollsAfterCancel = api.count("GET", "/api/searches/run-1");
@@ -233,7 +238,7 @@ describe("LiveSearch opening a config", () => {
     expect(screen.getByText("Finished, but no posts matched this config.")).toBeTruthy();
     expect(screen.queryByText("What a search does")).toBeNull();
     expect(window.location.search).toBe(`?config=${config.id}&run=run-1`);
-    expect(document.querySelector("dl[data-replay]")).toBeNull();
+    expect(document.querySelector("figure[data-replay]")).toBeNull();
   });
 
   it("shows what a search does only for a config that has never run", async () => {

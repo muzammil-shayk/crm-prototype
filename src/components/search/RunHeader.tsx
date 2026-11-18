@@ -7,7 +7,7 @@ import type { SearchRun, SearchType } from "@/api-client/types";
 import { formatDateTime, formatDuration, plural } from "@/components/format";
 import { Notice } from "@/components/ui/states";
 import { STATUS_LABEL } from "./run-labels";
-import { TierBar, tierBreakdown, totalLeads } from "./TierBar";
+import { tierBreakdown, totalLeads } from "./TierBar";
 import styles from "./search.module.css";
 
 export function runAnnouncement(run: SearchRun): string {
@@ -80,11 +80,6 @@ export function RunHeader({ run, types, onRunChange }: RunHeaderProps) {
           <p id="cancel-hint" className={styles.cancelHint}>
             Leads already scored are kept
           </p>
-        </div>
-      ) : null}
-      {run.status === "running" || totalLeads(run.tierCounts) > 0 ? (
-        <div className={styles.runTiers}>
-          <TierBar counts={run.tierCounts} pending={run.status === "running"} />
         </div>
       ) : null}
       {error ? (

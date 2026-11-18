@@ -140,6 +140,20 @@
   opacity: 0.55;
 }
 
+.scoreCell {
+  display: grid;
+  justify-items: stretch;
+  gap: 4px;
+}
+
+.capped {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  color: var(--weak-ink);
+}
+
 .score {
   display: grid;
   place-items: center;

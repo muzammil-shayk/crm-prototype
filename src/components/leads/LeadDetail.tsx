@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import type { Lead, SearchType } from "@/api-client/types";
 import { TIER_LABEL, TIER_MEANING } from "@/components/search/run-labels";
 import { Dialog } from "@/components/ui/Dialog";
@@ -28,10 +28,15 @@ interface LeadDetailProps {
 
 export function LeadDetail({ lead, configType, types, page, onClose, onGo, onLeadChange }: LeadDetailProps) {
   useLeadKeys(lead ? page : undefined, onGo);
+  const [lastId, setLastId] = useState<string | null>(null);
+  if (lead && lead.id !== lastId) setLastId(lead.id);
   return (
     <Dialog
       open={lead !== null}
       onClose={onClose}
+      returnFocus={() =>
+        lastId ? document.querySelector<HTMLElement>(`[data-lead-id="${CSS.escape(lastId)}"]`) : null
+      }
       variant="sheet"
       title={lead?.title ?? ""}
       footer={

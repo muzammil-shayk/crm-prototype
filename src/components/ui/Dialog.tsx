@@ -10,19 +10,42 @@ interface DialogProps {
   title: ReactNode;
   variant?: "center" | "sheet";
   footer?: ReactNode;
+  returnFocus?: () => HTMLElement | null;
   children: ReactNode;
 }
 
-export function Dialog({ open, onClose, title, variant = "center", footer, children }: DialogProps) {
+export function Dialog({
+  open,
+  onClose,
+  title,
+  variant = "center",
+  footer,
+  returnFocus,
+  children,
+}: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const headRef = useRef<HTMLElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const focusBack = useRef(returnFocus);
   const titleId = useId();
+
+  useEffect(() => {
+    focusBack.current = returnFocus;
+  });
 
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (open) {
+      if (dialog.open) return;
+      opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      dialog.showModal();
+      return;
+    }
+    if (dialog.open) dialog.close();
+    const target = focusBack.current?.() ?? opener.current;
+    opener.current = null;
+    if (target?.isConnected) target.focus();
   }, [open]);
 
   return (

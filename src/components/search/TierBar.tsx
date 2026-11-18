@@ -28,23 +28,19 @@ function Segments({ counts, size }: { counts: TierCounts; size: "full" | "mini" 
   );
 }
 
-export function TierBar({ counts, pending = false }: { counts: TierCounts; pending?: boolean }) {
+export function TierBar({ counts }: { counts: TierCounts }) {
   return (
     <div className={styles.full}>
       <Segments counts={counts} size="full" />
-      {pending ? (
-        <p className={styles.note}>Leads are sorted into tiers when scoring finishes.</p>
-      ) : (
-        <ul className={styles.legend} aria-label={`${plural(totalLeads(counts), "lead")} by tier`}>
-          {TIERS.map((tier) => (
-            <li key={tier} className={styles.legendItem}>
-              <span className={styles.swatch} data-tier={tier} aria-hidden="true" />
-              {TIER_LABEL[tier]}
-              <span className={`${styles.legendCount} mono`}>{counts[tier]}</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      <ul className={styles.legend} aria-label={`${plural(totalLeads(counts), "lead")} by tier`}>
+        {TIERS.map((tier) => (
+          <li key={tier} className={styles.legendItem}>
+            <span className={styles.swatch} data-tier={tier} aria-hidden="true" />
+            {TIER_LABEL[tier]}
+            <span className={`${styles.legendCount} mono`}>{counts[tier]}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

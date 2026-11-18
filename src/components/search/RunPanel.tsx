@@ -6,7 +6,8 @@ import { CheckIcon } from "@/components/ui/icons";
 import { ErrorState, LoadingRows, Notice } from "@/components/ui/states";
 import { STAGES } from "./run-labels";
 import { RunHeader } from "./RunHeader";
-import { RunOutcome, RunStatsList } from "./RunOutcome";
+import { RunFunnel } from "./RunFunnel";
+import { RunOutcome } from "./RunOutcome";
 import styles from "./search.module.css";
 
 interface RunPanelProps {
@@ -102,7 +103,7 @@ function RunProgress({ run }: { run: SearchRun }) {
           );
         })}
       </ol>
-      <RunStatsList stats={run.stats} reached={run.stage} live />
+      <RunFunnel run={run} />
       <p className={styles.progressNote}>
         Progress updates every half second. You can leave this page; the search keeps running and its results
         stay in Past runs.

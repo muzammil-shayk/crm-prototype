@@ -103,7 +103,7 @@ export function ConfigList({ configs, types, filter, busyId, onClearFilter, ...a
             <div className={styles.actions}>
               <button
                 type="button"
-                className="button"
+                className="button button-primary"
                 aria-disabled={busy || undefined}
                 onClick={() => {
                   if (!busy) actions.onRun(config);
